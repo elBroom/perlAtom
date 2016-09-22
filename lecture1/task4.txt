@@ -1,12 +1,12 @@
 l
 b 8
 c
-print Dumper(@cells)
+print Dumper(split(";",$row))
 B 8
-b 8 $cells[4] > 1024*1024
+b 8 @cells = split(";",$row); $cells[4] > 1024*1024
 c
 print $cells[4]
-w $array
+w @array
 c
 print $cells[4]
 c

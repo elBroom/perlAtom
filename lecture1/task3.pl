@@ -4,8 +4,8 @@ use Data::Dumper;
 my @array;
 
 while ($row = <>) {
-	@cells = split(";",$row);
-	push(@array, [@cells]);
+	chomp($row);
+	push(@array, [split(";",$row)]);
 }
 
 p @array;

@@ -1,1 +1,1 @@
-perl -nlae '$ln=join(";", @F[0..8]); if($#F > 8){$ln.=" ".join(" ", @F[9..$#F]);}; print $ln'
+perl -nlae 'if($#F < 8){next;}$ln=join(";", @F[0..8]); if($#F > 8){$ln.=" ".join(" ", @F[9..$#F]);}; print $ln'
