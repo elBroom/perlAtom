@@ -25,7 +25,7 @@ BEGIN{
 }
 no warnings 'experimental';
 
-sub tokenize {
+sub tokenize($) {
 	chomp(my $expr = shift);
 	$expr =~ s/\s*//g;
 	my @res = split m{((?<!e)[-+]|[*/^()])}, $expr;
