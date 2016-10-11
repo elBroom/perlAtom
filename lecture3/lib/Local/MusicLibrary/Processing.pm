@@ -1,8 +1,9 @@
-package Local::MusicLibrary;
+package Local::MusicLibrary::Processing;
 
 use strict;
 use warnings;
 use Data::Dumper;
+use Exporter 'import';
 
 =encoding utf8
 
@@ -22,7 +23,7 @@ our $VERSION = '1.00';
 
 =cut
 
-our @EXPORT_OK = qw(filtered sorted);
+our @EXPORT = qw(filtered sorted);
 
 sub filtered{
 	my @data = @{+shift};

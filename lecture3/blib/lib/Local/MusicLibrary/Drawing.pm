@@ -1,9 +1,10 @@
-package Local::MusicLibrary;
+package Local::MusicLibrary::Drawing;
 
 use 5.010;  # for given/when
 use strict;
 use warnings;
 no warnings 'experimental';
+use Exporter 'import';
 
 use List::Util qw(max);
 use Data::Dumper;
@@ -26,7 +27,7 @@ our $VERSION = '1.00';
 
 =cut
 
-our @EXPORT_OK = qw(draw);
+our @EXPORT = qw(draw);
 
 sub draw{
 	my @data = @{+shift};

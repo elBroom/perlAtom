@@ -1,7 +1,8 @@
-package Local::MusicLibrary;
+package Local::MusicLibrary::Parsing;
 
 use strict;
 use warnings;
+use Exporter 'import';
 
 =encoding utf8
 
@@ -21,7 +22,7 @@ our $VERSION = '1.00';
 
 =cut
 
-our @EXPORT_OK = qw(parse);
+our @EXPORT = qw(parse);
 
 sub parse{
 	my @data;
