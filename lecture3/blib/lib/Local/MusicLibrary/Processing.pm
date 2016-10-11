@@ -29,9 +29,9 @@ sub filtered{
 	my %filter = %{+shift};
 	for my $cell (keys %filter){
 		if($cell eq 'year'){
-			@data = grep {$filter{$cell} == $$_{$cell}} @data if($filter{$cell});
+			@data = grep {$filter{$cell} == $_->{$cell}} @data if($filter{$cell});
 		} else{
-			@data = grep {$filter{$cell} eq $$_{$cell}} @data if($filter{$cell});
+			@data = grep {$filter{$cell} eq $_->{$cell}} @data if($filter{$cell});
 		}
 	}
 	return @data;
@@ -41,9 +41,9 @@ sub sorted{
 	my @data = @{+shift};
 	my $sort = shift;
 	if($sort eq 'year'){
-		@data = sort {$$a{$sort} <=> $$b{$sort}} @data;
+		@data = sort {$a->{$sort} <=> $b->{$sort}} @data;
 	} else{
-		@data = sort {lc($$a{$sort}) cmp lc($$b{$sort})} @data;
+		@data = sort {lc($a->{$sort}) cmp lc($b->{$sort})} @data;
 	}
 	return @data;
 }

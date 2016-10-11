@@ -32,17 +32,13 @@ sub draw{
 	my @data = @{+shift};
 	return '' unless @data;
 
-	my @columns;
-	given (shift) {
-		when(undef)	{@columns = ('band', 'year', 'album', 'track', 'format');}
-		when ('')	{return ''}
-		default		{@columns = split(',', join(',', $_))}
-	}
+	my @columns = @{+shift};
+	return '' unless @columns;
 
 	# Считаем длину ячейки
-	my %col_len = ('band'=>0, 'year'=>0, 'album'=>0, 'track'=>0, 'format'=>0);
-	for my $cell (keys %col_len){
-		$col_len{$cell} = max map {length($$_{$cell})} @data;
+	my %col_len;
+	for my $cell (@columns){
+		$col_len{$cell} = max map {length($_->{$cell})} @data;
 	}
 
 	# Рисуем
