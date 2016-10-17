@@ -35,12 +35,18 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_source _row_class _acc
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
 
-	$self->{_source} = $params{'source'};
-	$self->{_row_class} = $params{'row_class'};
+	$self->_source($params{'source'});
+	$self->_row_class($params{'row_class'});
 	return $self;
 }
 
@@ -50,20 +56,20 @@ sub reduce_n{
 	while ($n > 0 and defined $self->_reduce()){
 		$n--;
 	}
-	return $self->{_acc};
+	return $self->reduced();
 }
 
 sub reduce_all{
 	my $self = shift;
 
 	while (defined $self->_reduce()){};
-	return $self->{_acc};
+	return $self->reduced();
 }
 
 sub reduced{
 	my $self = shift;
 
-	return $self->{_acc};
+	return $self->_acc();
 }
 
 sub _reduce{

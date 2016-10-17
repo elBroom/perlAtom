@@ -27,21 +27,27 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_delimiter
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
 
-	$self->{_delimiter} = "\n";
-	$self->{_delimiter} = $params{'delimiter'} if($params{'delimiter'});
-	$self->{_arr_rows} = [split("$self->{_delimiter}", $params{'text'})];
+	$self->_delimiter("\n");
+	$self->_delimiter($params{'delimiter'}) if($params{'delimiter'});
+	$self->_arr_rows([split("$self->{_delimiter}", $params{'text'})]);
 	return $self;
 }
 
 # sub delimiter{
 # 	my ($self, $delimiter) = @_;
 
-# 	$self->{_delimiter} = $delimiter;
-# 	$self->{_arr_rows} = [split("$self->{_delimiter}", $params{'text'})];
+# 	$self->_delimiter($delimiter);
+# 	$self->_arr_rows([split("$delimiter", $params{'text'})]);
 # }
 
 1;

@@ -1,11 +1,8 @@
 package Local::Source::FileHandler;
 use parent 'Local::Source';
 
-use 5.18.2;  # for given/when
 use strict;
 use warnings;
-
-use Data::Dumper;
 use mro 'c3';
 
 =encoding utf8
@@ -30,15 +27,29 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_fh
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
 
-	my $fh = $params{fh};
-	chomp(my @lines = <$fh>);
-	$self->{_arr_rows} = [@lines];
-
+	$self->_fh($params{fh});
 	return $self;
+}
+
+sub next{
+	my $self = shift;
+
+	my $fh = $self->_fh();
+	while(<$fh>){
+		chomp;
+		return $_;
+	}
+	return undef;
 }
 
 1;

@@ -28,17 +28,23 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_arr_rows
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
-	$self->{_arr_rows} = [];
+	$self->_arr_rows([]);
 	return $self;
 }
 
 sub next{
 	my $self = shift;
 
-	return shift $self->{_arr_rows};
+	return shift $self->_arr_rows();
 }
 
 1;

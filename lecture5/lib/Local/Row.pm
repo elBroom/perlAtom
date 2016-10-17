@@ -32,24 +32,31 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_cache
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
 
-	$self->{_cache} = $self->_parsing($params{str});
+	$self->_cache($self->_parsing($params{str}));
 	return $self;
 }
 
 sub get{
 	my ($self, $name, $default) = @_;
-	if($self->{_cache} and $self->{_cache}->{$name} and
-		!reftype($self->{_cache}->{$name})){ #не ссылка
-		return $self->{_cache}->{$name};
+	if($self->_cache() and $self->_cache()->{$name} and
+		!reftype($self->_cache()->{$name})){ #не ссылка
+		return $self->_cache()->{$name};
 	}
 	return $default;
 }
 
 sub _parsing{
+	undef;
 }
 
 1;

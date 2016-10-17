@@ -4,7 +4,6 @@ use parent 'Local::Reducer';
 use strict;
 use warnings;
 use mro 'c3';
-use List::Util qw(max);
 
 =encoding utf8
 
@@ -28,25 +27,31 @@ our $VERSION = '1.00';
 
 =cut
 
+use Class::XSAccessor {
+	accessors => [qw/
+		_top _bottom
+	/],
+};
+
 sub new{
 	my ($class, %params) = @_;
 	my $self = $class->next::method(%params);
 
-	$self->{_top} = $params{'top'};
-	$self->{_bottom} = $params{'bottom'};
-	$self->{_acc} = $params{'initial_value'};
+	$self->_top($params{'top'});
+	$self->_bottom($params{'bottom'});
+	$self->_acc($params{'initial_value'});
 	return $self;
 }
 
 sub _reduce{
 	my $self = shift;
 
-	my $str = $self->{_source}->next();
+	my $str = $self->_source()->next();
 	if($str){
-		my $row = $self->{_row_class}->new(str=>$str);
-		my $val = abs($row->get($self->{_top}) - $row->get($self->{_bottom}));
-		$self->{_acc} = max($self->{_acc}, $val);
-		return $self->{_acc};
+		my $row = $self->_row_class()->new(str=>$str);
+		my $val = $row->get($self->_top()) - $row->get($self->_bottom());
+		$self->_acc($val) if (!defined $self->_acc() or $val > $self->_acc());
+		return $self->_acc();
 	}
 	return undef;
 }

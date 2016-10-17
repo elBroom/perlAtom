@@ -31,7 +31,7 @@ sub new{
 	my ($class, %params) = @_;
 	my $self = bless {}, $class;
 
-	$self->{_arr_rows} = $params{'array'};
+	$self->_arr_rows($params{'array'});
 	return $self;
 }
 

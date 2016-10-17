@@ -20,15 +20,15 @@ my $my_sum_reducer = Local::Reducer::Sum->new(
 my $my_sum_result;
 
 $my_sum_result = $my_sum_reducer->reduce_n(3);
-is($my_sum_result, 6, 'my sum reduced 1 n=3');
+is($my_sum_result, 6, 'my sum reduced 6');
 is($my_sum_reducer->reduced, 6, 'my sum reducer saved n=3');
 
 $my_sum_result = $my_sum_reducer->reduce_n(1);
-is($my_sum_result, 10, 'my sum reduced 1 n=1');
+is($my_sum_result, 10, 'my sum reduced 10');
 is($my_sum_reducer->reduced, 10, 'my sum reducer saved n=1');
 
 $my_sum_result = $my_sum_reducer->reduce_n(4);
-is($my_sum_result, 36, 'my sum reduced 1 n=4');
+is($my_sum_result, 36, 'my sum reduced 36');
 is($my_sum_reducer->reduced, 36, 'my sum reducer saved n=4');
 
 $my_sum_result = $my_sum_reducer->reduce_all();
@@ -36,7 +36,7 @@ is($my_sum_result, 55, 'my sum reduced all');
 is($my_sum_reducer->reduced, 55, 'my sum reducer saved at the end');
 
 $my_sum_result = $my_sum_reducer->reduce_n(2);
-is($my_sum_result, 55, 'my sum reduced 1 n=2');
+is($my_sum_result, 55, 'my sum reduced 55');
 is($my_sum_reducer->reduced, 55, 'my sum reducer saved n=2');
 
 close $my_sum_fh;
