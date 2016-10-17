@@ -44,7 +44,7 @@ sub parse_json {
 			(?&object)|
 			true(?{[@{$^R}, 1]})| #преобразем в perl значения
 			false(?{[@{$^R}, 0]})| #преобразем в perl значения
-			null(?{[@{$^R}, "eval(undef)"]}) #преобразем в perl значения
+			null(?{[@{$^R}, "undef"]}) #преобразем в perl значения
 		){0}
 		(?<key_value>
 			(\s*(?&string)\s*:\s*(?&value)\s*)
