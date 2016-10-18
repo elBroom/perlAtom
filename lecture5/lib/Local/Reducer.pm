@@ -37,7 +37,7 @@ our $VERSION = '1.00';
 
 use Class::XSAccessor {
 	accessors => [qw/
-		_source _row_class _acc
+		_source _row_class _reduce_result
 	/],
 };
 
@@ -47,13 +47,14 @@ sub new{
 
 	$self->_source($params{'source'});
 	$self->_row_class($params{'row_class'});
+	$self->_reduce_result($params{'initial_value'});
 	return $self;
 }
 
 sub reduce_n{
 	my ($self, $n) = @_;
 
-	while ($n > 0 and defined $self->_reduce()){
+	while ($n > 0 and defined $self->_reduce_next()){
 		$n--;
 	}
 	return $self->reduced();
@@ -62,17 +63,17 @@ sub reduce_n{
 sub reduce_all{
 	my $self = shift;
 
-	while (defined $self->_reduce()){};
+	while (defined $self->_reduce_next()){};
 	return $self->reduced();
 }
 
 sub reduced{
 	my $self = shift;
 
-	return $self->_acc();
+	return $self->_reduce_result();
 }
 
-sub _reduce{
+sub _reduce_next{
 	return undef;
 }
 

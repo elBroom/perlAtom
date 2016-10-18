@@ -38,18 +38,17 @@ sub new{
 	my $self = $class->next::method(%params);
 
 	$self->_field($params{'field'});
-	$self->_acc($params{'initial_value'});
 	return $self;
 }
 
-sub _reduce{
+sub _reduce_next{
 	my $self = shift;
 
 	my $str = $self->_source()->next();
 	if($str){
 		my $val = $self->_row_class()->new(str=>$str)->get($self->_field());
-		$self->_acc($self->_acc() + $val);
-		return $self->_acc();
+		$self->_reduce_result($self->_reduce_result() + $val);
+		return $self->_reduce_result();
 	}
 	return undef;
 }

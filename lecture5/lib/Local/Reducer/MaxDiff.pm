@@ -39,19 +39,18 @@ sub new{
 
 	$self->_top($params{'top'});
 	$self->_bottom($params{'bottom'});
-	$self->_acc($params{'initial_value'});
 	return $self;
 }
 
-sub _reduce{
+sub _reduce_next{
 	my $self = shift;
 
 	my $str = $self->_source()->next();
 	if($str){
 		my $row = $self->_row_class()->new(str=>$str);
 		my $val = $row->get($self->_top()) - $row->get($self->_bottom());
-		$self->_acc($val) if (!defined $self->_acc() or $val > $self->_acc());
-		return $self->_acc();
+		$self->_reduce_result($val) if (!defined $self->_reduce_result() or $val > $self->_reduce_result());
+		return $self->_reduce_result();
 	}
 	return undef;
 }

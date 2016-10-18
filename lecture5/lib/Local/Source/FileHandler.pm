@@ -45,9 +45,10 @@ sub next{
 	my $self = shift;
 
 	my $fh = $self->_fh();
-	while(<$fh>){
-		chomp;
-		return $_;
+	my $line = <$fh>;
+	if($line){
+		chomp($line);
+		return $line;
 	}
 	return undef;
 }

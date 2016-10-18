@@ -39,31 +39,31 @@ sub new{
 
 	$self->_field($params{'field'});
 
-	my %acc;
-	$acc{"max"} = $params{'initial_value'};
-	$acc{"min"} = $params{'initial_value'};
-	$acc{"sum"} = $params{'initial_value'};
-	$acc{"count"} = 0;
-	$self->_acc(\%acc);
+	my %reduce_result;
+	$reduce_result{"max"} = $params{'initial_value'};
+	$reduce_result{"min"} = $params{'initial_value'};
+	$reduce_result{"sum"} = $params{'initial_value'};
+	$reduce_result{"count"} = 0;
+	$self->_reduce_result(\%reduce_result);
 
 	return $self;
 }
 
-sub _reduce{
+sub _reduce_next{
 	my $self = shift;
 
 	my $str = $self->_source()->next();
 	if($str){
 		my $val = $self->_row_class()->new(str=>$str)->get($self->_field());
 
-		my %acc = %{$self->_acc()};
-		$acc{"max"} = $val if (!defined $acc{"max"} or $val > $acc{"max"});
-		$acc{"min"} = $val if (!defined $acc{"min"} or $val < $acc{"min"});
-		$acc{"sum"} += $val;
-		$acc{"count"} += 1;
-		$self->_acc(\%acc);
+		my %reduce_result = %{$self->_reduce_result()};
+		$reduce_result{"max"} = $val if (!defined $reduce_result{"max"} or $val > $reduce_result{"max"});
+		$reduce_result{"min"} = $val if (!defined $reduce_result{"min"} or $val < $reduce_result{"min"});
+		$reduce_result{"sum"} += $val;
+		$reduce_result{"count"} += 1;
+		$self->_reduce_result(\%reduce_result);
 
-		return %acc;
+		return %reduce_result;
 	}
 	return undef;
 }
@@ -72,20 +72,20 @@ sub _reduce{
 sub get_max{
 	my $self = shift;
 
-	return $self->_acc()->{"max"};
+	return $self->_reduce_result()->{"max"};
 }
 
 sub get_min{
 	my $self = shift;
 
-	return $self->_acc()->{"min"};
+	return $self->_reduce_result()->{"min"};
 }
 
 sub get_avg{
 	my $self = shift;
 
-	return undef unless ($self->_acc()->{"count"});
-	return $self->_acc()->{"sum"} / $self->_acc()->{"count"};
+	return undef unless ($self->_reduce_result()->{"count"});
+	return $self->_reduce_result()->{"sum"} / $self->_reduce_result()->{"count"};
 }
 
 1;
