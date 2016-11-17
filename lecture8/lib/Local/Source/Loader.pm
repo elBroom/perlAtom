@@ -74,7 +74,7 @@ sub get_post{
 	}
 	$result{'author'} =~ s/^.{1}//s;
 	$result{'theme'} = ($tree->findvalues('//h1[@class = "post__title"]/span'))[1];
-	# $result{'rating'} = $tree->findvalue('');
+	$result{'rating'} = $tree->findvalue('//ul[@class = "postinfo-panel postinfo-panel_post"]//span[@class = "voting-wjt__counter-score js-score"]');
 	$result{'count_view'} = $tree->findvalue('//div[@class = "views-count_post"]');
 	$result{'count_star'} = $tree->findvalue('//span[@class = "favorite-wjt__counter js-favs_count"]');
 	

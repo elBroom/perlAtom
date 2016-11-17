@@ -10,7 +10,7 @@ use Data::Dumper;
 use Local::Source::Loader;
 use Local::Source::MySQL;
 use Local::Source::Memcached;
-use Local::Format;
+use Local::FormatFabric;
 
 =encoding utf8
 
@@ -44,8 +44,8 @@ sub new{
 	$self->_refresh($params{'refresh'});
 	$self->_params($params{'params'});
 	$self->_site($params{'site'} or 'habrahabr');
+	$self->_format(Local::FormatFabric->new($params{'format'}));
 
-	$self->_format(Local::Format->new($params{'format'}));
 	$self->_loader(Local::Source::Loader->new('site'=>$self->_site));
 	$self->_db(Local::Source::MySQL->new('site'=>$self->_site));
 	$self->_memcached(Local::Source::Memcached->new('site'=>$self->_site));
@@ -211,7 +211,22 @@ sub _get_self_commentors{
 sub _get_desert_posts{
 	my ($self, $n) = @_;
 
-	return $self->_db->get_desert_posts($n);
+	my $mysql = sub{
+		say "Mysql";
+		return $self->_db->get_desert_posts($n);
+	};
+
+	my $memcached = sub{
+		my $result = $self->_memcached->get_desert_posts($n) unless($self->_refresh);
+		say "Memcached";
+		unless($result){
+			$result = $mysql->();
+			$self->_memcached->set_desert_posts({$n => $result});
+		}
+		return $result;
+	};
+	
+	return $memcached->();
 }
 
 sub _get_loader_post{
@@ -232,6 +247,7 @@ sub _get_loader_post{
 		}
 		$result->{'comments'} = \@commenters;
 		$self->_memcached->del_self_commentors();
+		$self->_memcached->del_desert_posts();
 		return $result;
 	};
 

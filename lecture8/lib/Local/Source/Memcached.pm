@@ -69,6 +69,17 @@ sub get_self_commentors{
 	return undef;
 }
 
+sub get_desert_posts{
+	my ($self, $n) = @_;
+	my $data = $self->connection->get($self->_site.'_desert_posts');
+
+	if($data){
+		$data = JSON::XS->new->utf8->decode($data);
+		return $data->{$n} if($data->{$n});
+	}
+	return undef;
+}
+
 sub set_user{
 	my ($self, $data) = @_;
 
@@ -89,9 +100,30 @@ sub set_self_commentors{
 	) if ($data);
 }
 
+sub set_desert_posts{
+	my ($self, $data) = @_;
+
+	my $old_data = $self->connection->get($self->_site.'_desert_posts');
+	if($old_data){
+		$old_data = JSON::XS->new->utf8->decode($old_data);
+		$old_data->{$_} = $data->{$_} for (keys $data);
+		$data = $old_data;
+	}
+	return $self->connection->set(
+		$self->_site.'_desert_posts',
+		JSON::XS->new->utf8->encode($data),
+		60
+	) if ($data);
+}
+
 sub del_self_commentors{
 	my ($self) = @_;
 	return $self->connection->delete($self->_site.'_self_commentors');
+}
+
+sub del_desert_posts{
+	my ($self) = @_;
+	return $self->connection->delete($self->_site.'_desert_posts');
 }
 
 sub _connection_ini{

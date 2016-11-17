@@ -69,7 +69,7 @@ sub get_post{
 	my ($self, $id) = @_;
 
 	return $self->connection->selectrow_hashref(
-		'SELECT author, theme, count_view, count_star FROM post WHERE id_post = ?',
+		'SELECT author, theme, rating, count_view, count_star FROM post WHERE id_post = ?',
 		{}, $id
 	) if ($id);
 
@@ -103,7 +103,7 @@ sub get_desert_posts{
 	my ($self, $n) = @_;
 
 	return $self->connection->selectall_arrayref(
-		'SELECT author, theme, count_view, count_star FROM commenter 
+		'SELECT author, theme, post.rating, count_view, count_star FROM commenter 
 			JOIN user USING(id_user)
 			JOIN post USING(id_post)
 			GROUP BY id_post
@@ -130,11 +130,11 @@ sub set_post{
 	my ($self, $data) = @_;
 
 	return $self->connection->prepare(
-		'INSERT INTO post (id_post, author, theme, count_view, count_star, last_update) VALUES (?,?,?,?,?,NOW())
-		ON DUPLICATE KEY UPDATE author=?, theme=?, count_view=?, count_star=?, last_update=NOW()'
+		'INSERT INTO post (id_post, author, theme, rating, count_view, count_star, last_update) VALUES (?,?,?,?,?,?,NOW())
+		ON DUPLICATE KEY UPDATE author=?, theme=?, rating=?, count_view=?, count_star=?, last_update=NOW()'
 	)->execute(
-		$data->{'id'}, $data->{'author'}, $data->{'theme'}, $data->{'count_view'}, $data->{'count_star'},
-		$data->{'author'}, $data->{'theme'}, $data->{'count_view'}, $data->{'count_star'}
+		$data->{'id'}, $data->{'author'}, $data->{'theme'}, $data->{'rating'}, $data->{'count_view'}, $data->{'count_star'},
+		$data->{'author'}, $data->{'theme'}, $data->{'rating'}, $data->{'count_view'}, $data->{'count_star'}
 	) if($data->{'id'});
 }
 
