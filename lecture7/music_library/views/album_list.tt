@@ -1,0 +1,35 @@
+<h1>Все альбомы пользователя <% user.name or user.login %></h1>
+
+<% IF user.id == current_user.id %>
+	<a href="/album/update/" class="btn btn-default" role="button">Добавить альбом</a>
+	<a href="/album/parse" class="btn btn-default" role="button">Парсинг альбома</a>
+<% END %>
+<% IF albums.0 %>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th>Название</th>
+			<th>Группа</th>
+			<th>Год выпуска</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		<% FOREACH album IN albums %>
+			<tr>
+				<td><% album.title %></td>
+				<td><% album.band_name %></td>
+				<td><% album.year %></td>
+				<td>
+					<a href="/track/list/<% album.id %>"><span class="glyphicon glyphicon-list" data-toggle="tooltip" data-placement="top" title="Посмотреть"></span></a>
+				<% IF user.id == current_user.id %>
+					<a href="/album/update/<% album.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
+				<% END %>
+				</td>
+			</tr>
+		<% END %>
+	</tbody>
+</table>
+<% ELSE %>
+<p>Альбомов пока нет.</p>
+<% END %>

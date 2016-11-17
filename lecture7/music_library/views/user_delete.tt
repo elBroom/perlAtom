@@ -1,0 +1,4 @@
+<form action="/user_delete" method="post">
+	<input type="hidden" name="token" value="<% token %>">
+	<button type="submit" class="btn btn-danger">Удалить аккаунт</button>
+</form>

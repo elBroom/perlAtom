@@ -1,0 +1,6 @@
+<h1>Все пользователи</h1>
+<ul class="list-group">
+	<% FOREACH user IN users %>
+		<li class="list-group-item"><a href="/<% user.id %>"><% user.login %></a></li>
+	<% END %>
+</ul>

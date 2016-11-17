@@ -1,0 +1,38 @@
+<h1><% album.title %></h1>
+
+<% IF album.user_id == current_user.id %>
+<a href="/track/update/" class="btn btn-default" role="button">Добавить трек</a>
+<% END %>
+<% IF tracks.0 %>
+<table class="table table-hover">
+	<thead>
+		<tr>
+			<th>Название</th>
+			<th>Формат</th>
+			<th>Картинка</th>
+			<% IF album.user_id == current_user.id %>
+			<th></th>
+			<% END %>
+		</tr>
+	</thead>
+	<tbody>
+		<% FOREACH track IN tracks %>
+			<tr class="row-id-<% track.id %>">
+				<td><% track.name %></td>
+				<td><% track.format %></td>
+				<td><% IF track.image or track.http_image %>
+					<img src="<% track.image or track.http_image %>" height="50" width="50">
+				<% END %></td>
+				<% IF album.user_id == current_user.id %>
+				<td>
+					<a href="/track/update/<% track.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
+					<a href="/track/delete/<% track.id %>" class="delete"><span class="glyphicon glyphicon-remove" data-toggle="tooltip" data-placement="top" title="Удалить"></span></a>
+				</td>
+				<% END %>
+			</tr>
+		<% END %>
+	</tbody>
+</table>
+<% ELSE %>
+<p>Треков пока нет.</p>
+<% END %>

@@ -1,0 +1,10 @@
+<form action="/album/parse" method="post">
+	<% IF err %>
+		<div class="alert alert-danger"><% err %></div>
+	<% END %>
+	<div class="form-group">
+		<label for="title">Текст:</label>
+		<textarea class="form-control" name="text" rows="12"></textarea>
+	</div>
+	<button type="submit" class="btn btn-default">Распарсить</button>
+</form>

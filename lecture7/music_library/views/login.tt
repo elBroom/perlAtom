@@ -1,0 +1,17 @@
+<form action="/login" method="post">
+	<% IF err %>
+		<div class="alert alert-danger">
+			<% err %>
+		</div>
+	<% END %>
+	<input type="hidden" name="path" value="<% path %>">
+	<div class="form-group">
+		<label for="login">Логин:</label>
+		<input type="text" class="form-control" id="login" value="<% login %>" name="login">
+	</div>
+	<div class="form-group">
+		<label for="pwd">Пароль:</label>
+		<input type="password" class="form-control" id="password" name="password">
+	</div>
+	<button type="submit" class="btn btn-default">Войти</button>
+</form>
