@@ -66,3 +66,5 @@ plugins:
       on_connect_do: ["SET NAMES 'utf8'"]
       log_queries: 1
       handle_class: 'My::Super::Database::Handle'
+
+images_dir: "uploads"

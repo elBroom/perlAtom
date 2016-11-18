@@ -3,6 +3,7 @@ use Dancer2;
 
 use Dancer2::Plugin::Database;
 use Dancer2::Plugin::Ajax;
+
 use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
 
@@ -14,15 +15,32 @@ prefix undef;
 
 get '/:id?' => sub {
 	my $user_id = params->{id} || session('user')->{id};
-	template 'album_list', {
-		'albums' => database->selectall_arrayref(
-						'SELECT * FROM album WHERE user_id=?',
-						{ Slice => {} },
-						$user_id
-					),
-		'user' => database->quick_select('user', {'id' => $user_id}),
-		'current_user' => session('user'),
-	};
+	my $user = database->quick_select('user', {'id' => $user_id});
+	if($user){
+		template 'album_list', {
+			'albums' => database->selectall_arrayref(
+							'SELECT * FROM album WHERE user_id=?',
+							{ Slice => {} },
+							$user_id
+						),
+			'user' => $user,
+			'current_user' => session('user'),
+		};
+	} else{
+		render_404(request->path);
+	}
+};
+
+get '/uploads/:name' => sub {
+	if (params->{name} =~ m{^[\d\w_]+\.(png|jpg|svg|gif|tiff|bmp|ico|wbmp|webp)$}){
+		my $dir = get_dir_images();
+		my $path = path($dir, params->{name});
+
+		if (-e $path) {
+			return send_file($path, system_path => 1);
+		}
+	}
+	render_404(request->path);
 };
 
 prefix '/album';
@@ -129,10 +147,10 @@ get '/list/:id' => sub {
 						),
 			'album' => $album,
 			'current_user' => session('user'),
+			'images_dir' => '/'.config->{images_dir}.'/',
 		};
 	} else{
-		status 'not_found';
-		template 'special_404', { path => request->path };
+		render_404(request->path);
 	}
 	
 };
@@ -148,32 +166,38 @@ any ['get', 'post'] => '/update/:id?' => sub {
 								params->{id}, session('user')->{id});
 		redirect '/' unless($track);
 	}
+
 	if(request->method() eq "POST"){
 		$err = 'Поле Название не заполнено' unless($err || params->{name});
 		$err = 'Поле Год не заполнено' unless($err || params->{format});
 		$err = 'Альбом не выбран' unless($err || params->{album_id});
-		$err = 'Адрес изображения не является http(s) ссылкой' unless($err || params->{http_image} =~ m{^$|^https?:\/\/.*(png|jpg|svg|gif|tiff)$});
+		$err = 'Адрес изображения не является http(s) ссылкой' unless($err || 
+			params->{http_image} =~ m{^$|^https?:\/\/.+\.(png|jpg|jpeg|svg|svgz|gif|tif|tiff|bmp|ico|wbmp|webp)$});
+		$err = 'Тип файла не соответствует изображению' unless($err || !(params->{image} && check_type(request->upload('image')->type)));
 
-		# print Dumper(params->{image});
-		# if(!$err && params->{image}){
-		# 	$image = params->{album_id}.'_'.generate_file_name;
-		# 	my $dir = path(config->{appdir}, 'uploads');
-		# 	mkdir $dir if not -e $dir;
-		# 	my $path = path($dir, $image);
-		# 	request->upload('image')->link_to($path);
-		# 	print Dumper($path);
-		# } elsif($track){
-		# 	$image = $track->{image};
-		# }
+		$image = $track->{image} if($track);
 
 		unless($err){
+			if(params->{image}){
+				my $dir = get_dir_images();
+				my $old_image = $image;
+				$image = params->{album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
+				my $path = path($dir, $image);
+				
+				request->upload('image')->link_to($path);
+				if($old_image){
+					$path = path($dir, $old_image);
+					unlink($path) if -e $path;
+				}
+			}
+
 			my $result;
 			if(params->{id}){ #new
 				$result = database->quick_update('track', { id => params->{id} },
-				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => params->{image} });
+				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => $image });
 			} else{ #old
 				$result = database->quick_insert('track', 
-				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => params->{image} });
+				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => $image });
 			}
 			redirect '/track/list/'.params->{album_id} if($result);
 		}
@@ -203,6 +227,7 @@ any ['get', 'post'] => '/update/:id?' => sub {
 						{ Slice => {} },
 						session('user')->{id}
 					),
+		'images_dir' => '/'.config->{images_dir}.'/',
 	};
 };
 
@@ -213,15 +238,63 @@ ajax '/delete/:id' => sub {
 							 WHERE t.id=? AND a.user_id=?', {},
 							params->{id}, session('user')->{id});
 	if($track){
-		database->quick_delete('track', {'id' => params->{id}});
-		return to_json { id => params->{id} };
+		database->quick_delete('track', {'id' => $track->{id}});
+		if($track->{image}){
+			my $dir = get_dir_images();
+			my $path = path($dir, $track->{image});
+			unlink($path) if -e $path;
+		}
+		return to_json { id => $track->{id} };
 	} else{
 		return to_json { error => 'permission denied' };
 	}
 };
 
+sub get_types{
+	return {
+		'image/gif' => 'gif',
+		'image/jpeg' => 'jpg',
+		'image/pjpeg' => 'jpg',
+		'image/png' => 'png',
+		'image/bmp' => 'bmp',
+		'image/x-bmp' => 'bmp',
+		'image/x-ms-bmp' => 'bmp',
+		'image/svg+xml' => 'svg',
+		'image/tiff' => 'tiff',
+		'image/vnd.microsoft.icon' => 'ico',
+		'image/vnd.wap.wbmp' => 'wbmp',
+		'image/webp' => 'webp',
+	};
+}
+
+sub check_type{
+	my ($type) = @_;
+
+	return exists(get_types()->{$type});
+}
+
+sub get_image_suffix{
+	my ($type) = @_;
+
+	print "mime-type: ".$type."\n";
+	return get_types()->{$type};
+}
+
 sub generate_file_name{
 	return md5_hex(localtime(time));
+}
+
+sub get_dir_images{
+	my $dir = path(config->{appdir}, config->{images_dir});
+	mkdir $dir if not -e $dir;
+	return $dir;
+}
+
+sub render_404{
+	my ($path) = @_;
+
+	status 404;
+	return "No such page: $path";
 }
 
 true;

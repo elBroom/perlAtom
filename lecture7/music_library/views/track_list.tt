@@ -21,7 +21,7 @@
 				<td><% track.name %></td>
 				<td><% track.format %></td>
 				<td><% IF track.image or track.http_image %>
-					<img src="<% track.image or track.http_image %>" height="50" width="50">
+					<img src="<% images_dir %><% track.image or track.http_image %>" height="50" width="50">
 				<% END %></td>
 				<% IF album.user_id == current_user.id %>
 				<td>
