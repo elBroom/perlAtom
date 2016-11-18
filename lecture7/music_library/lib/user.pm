@@ -96,14 +96,14 @@ any ['get', 'post'] => '/user_delete' => sub {
 		if(session('token') && session('token') eq params->{token}){
 			database->quick_delete('user', {'id' => session('user')->{id}});
 			app->destroy_session;
+			redirect '/login';
 		}
-		redirect '/login';
 	}
 	my $token = generate_token();
-	session token => generate_token();
+	session token => $token;
 
 	template 'user_delete',{
-		'token' => generate_token()
+		'token' => $token
 	};
 };
 

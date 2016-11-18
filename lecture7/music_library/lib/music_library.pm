@@ -7,6 +7,9 @@ use Dancer2::Plugin::Ajax;
 use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
 
+use strict;
+use warnings;
+
 use user;
 
 our $VERSION = '0.1';
@@ -55,6 +58,7 @@ any ['get', 'post'] => '/update/:id?' => sub {
 	if(request->method() eq "POST"){
 		$err = 'Поле Название не заполнено' unless($err || params->{title});
 		$err = 'Поле Год не заполнено' unless($err || params->{year});
+		$err = 'Поле Год должен быть четырех разрядным числом' unless($err || params->{year} =~ /[\d]{4}/);
 		$err = 'Поле Группа не заполнено' unless($err || params->{band_name});
 		unless($err){
 			my $result;
@@ -173,7 +177,7 @@ any ['get', 'post'] => '/update/:id?' => sub {
 		$err = 'Альбом не выбран' unless($err || params->{album_id});
 		$err = 'Адрес изображения не является http(s) ссылкой' unless($err || 
 			params->{http_image} =~ m{^$|^https?:\/\/.+\.(png|jpg|jpeg|svg|svgz|gif|tif|tiff|bmp|ico|wbmp|webp)$});
-		$err = 'Тип файла не соответствует изображению' unless($err || !(params->{image} && check_type(request->upload('image')->type)));
+		$err = 'Тип файла не соответствует изображению' if(!$err && params->{image} && !check_type(request->upload('image')->type));
 
 		$image = $track->{image} if($track);
 
@@ -270,13 +274,12 @@ sub get_types{
 sub check_type{
 	my ($type) = @_;
 
-	return exists(get_types()->{$type});
+	return defined(get_types()->{$type});
 }
 
 sub get_image_suffix{
 	my ($type) = @_;
 
-	print "mime-type: ".$type."\n";
 	return get_types()->{$type};
 }
 

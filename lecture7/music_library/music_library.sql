@@ -30,9 +30,9 @@ DROP TABLE IF EXISTS `track`;
 CREATE TABLE IF NOT EXISTS `track` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
-  `format` varchar(5) NOT NULL,
-  `image` varchar(255) NOT NULL,
-  `http_image` varchar(255) NOT NULL,
+  `format` varchar(5) NULL,
+  `image` varchar(255) NULL,
+  `http_image` varchar(255) NULL,
   `album_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `login` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(255) NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `login` (`login`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
