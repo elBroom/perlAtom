@@ -151,10 +151,10 @@ sub set_commenter{
 sub _connection_ini{
 	my ($self, $conf) = @_;
 
-	return DBI->connect(
+	return (DBI->connect(
 		'dbi:mysql:database='.$conf->val('DB','db_name'), $conf->val('DB','db_user'), $conf->val('DB','db_pass'),
 		{ RaiseError=>1, mysql_enable_utf8 => 1 }
-	) or die "Can't connection to database" ;
+	) or die "Can't connection to database");
 }
 
 1;

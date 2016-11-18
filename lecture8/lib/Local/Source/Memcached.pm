@@ -106,7 +106,7 @@ sub set_desert_posts{
 	my $old_data = $self->connection->get($self->_site.'_desert_posts');
 	if($old_data){
 		$old_data = JSON::XS->new->utf8->decode($old_data);
-		$old_data->{$_} = $data->{$_} for (keys $data);
+		$old_data->{$_} = $data->{$_} for (keys %$data);
 		$data = $old_data;
 	}
 	return $self->connection->set(
@@ -129,9 +129,9 @@ sub del_desert_posts{
 sub _connection_ini{
 	my ($self, $conf) = @_;
 
-	return Cache::Memcached::Fast->new({servers => [
+	return (Cache::Memcached::Fast->new({servers => [
 		$conf->val('MEMACHED','mem_host').':'.$conf->val('MEMACHED','mem_port')
-	]}) or die "Can't connection to memcached"
+	]}) or die "Can't connection to memcached");
 }
 
 1;

@@ -212,13 +212,11 @@ sub _get_desert_posts{
 	my ($self, $n) = @_;
 
 	my $mysql = sub{
-		say "Mysql";
 		return $self->_db->get_desert_posts($n);
 	};
 
 	my $memcached = sub{
 		my $result = $self->_memcached->get_desert_posts($n) unless($self->_refresh);
-		say "Memcached";
 		unless($result){
 			$result = $mysql->();
 			$self->_memcached->set_desert_posts({$n => $result});
