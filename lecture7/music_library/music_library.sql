@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `album` (
   `user_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE INDEX `album_user_id_album_id` ON `album` (`user_id`, `id`);
 
 -- --------------------------------------------------------
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `track` (
   `album_id` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE INDEX `track_album_id_track_id` ON `track` (`album_id`, `id`);
 
 -- --------------------------------------------------------
 

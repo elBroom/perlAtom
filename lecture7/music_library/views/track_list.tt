@@ -1,9 +1,9 @@
-<h1><% album.title %></h1>
+<h1><% album.title | html %></h1>
 
 <% IF album.user_id == current_user.id %>
-<a href="/track/update/" class="btn btn-default" role="button">Добавить трек</a>
+<a href="/track/update/<% album.id %>/" class="btn btn-default" role="button">Добавить трек</a>
 <% END %>
-<% IF tracks.0 %>
+<% IF tracks.size %>
 <table class="table table-hover">
 	<thead>
 		<tr>
@@ -18,14 +18,18 @@
 	<tbody>
 		<% FOREACH track IN tracks %>
 			<tr class="row-id-<% track.id %>">
-				<td><% track.name %></td>
-				<td><% track.format %></td>
-				<td><% IF track.image or track.http_image %>
-					<img src="<% images_dir %><% track.image or track.http_image %>" height="50" width="50">
-				<% END %></td>
+				<td><% track.name | html %></td>
+				<td><% track.format | html %></td>
+				<td>
+					<% IF track.image %>
+						<img src="<% images_dir %><% track.image | url | html %>" height="50" width="50">
+					<% ELSIF track.http_image %>
+						<img src="<% track.http_image | url | html %>" height="50" width="50">
+					<% END %>
+				</td>
 				<% IF album.user_id == current_user.id %>
 				<td>
-					<a href="/track/update/<% track.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
+					<a href="/track/update/<% track.album_id %>/<% track.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
 					<a href="/track/delete/<% track.id %>" class="delete"><span class="glyphicon glyphicon-remove" data-toggle="tooltip" data-placement="top" title="Удалить"></span></a>
 				</td>
 				<% END %>

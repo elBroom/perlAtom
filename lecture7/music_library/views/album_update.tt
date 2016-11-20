@@ -1,4 +1,4 @@
-<form action="/album/update/<% id %>" method="post">
+<form method="post">
 	<% IF err %>
 		<div class="alert alert-danger">
 			<% err %>
@@ -14,7 +14,7 @@
 	</div>
 	<div class="form-group">
 		<label for="band_name">Группа:</label>
-		<input type="text" class="form-control" id="band_name"  value="<% title %>" name="band_name">
+		<input type="text" class="form-control" id="band_name"  value="<% band_name %>" name="band_name">
 	</div>
 	<button type="submit" class="btn btn-default">Сохранить</button>
 </form>

@@ -1,15 +1,21 @@
-package music_library::user;
-use Dancer2 appname => 'music_library';
+package MusicLibrary::User;
+use Dancer2 appname => 'MusicLibrary';
 
 use Dancer2::Plugin::Database;
 
+use strict;
+use warnings;
+use utf8;
+
 use Digest::MD5 qw(md5_hex);
+use Scalar::Util qw(reftype);
 use Data::Dumper;
+use Data::UUID;
 
 our $VERSION = '0.1';
 
 hook before => sub{
-	if (!session('user') && request->dispatch_path !~ m{^/(login|registration)}){
+	if (!session('user') && request->dispatch_path !~ m{^/(login|registration)$}){
 		forward '/login', {path => request->path};
 	}
 };
@@ -35,23 +41,33 @@ any ['get', 'post'] => '/login' => sub {
 };
 
 any ['get', 'post'] => '/registration' => sub {
-	my $err;
+	my ($validated, $err);
 
 	if(request->method() eq "POST"){
-		$err = 'Логин/пароль пусты' unless($err || params->{login} && params->{password});
-		$err = 'Пароль не совпадает' unless($err || params->{password} eq params->{password2});
-		$err = 'Пароль должен быть больше 3х символов' unless($err || length(params->{password})>3);
+		my $h_errors = {
+			'Логин/пароль пусты' => sub{
+				params->{login} && params->{password}
+			},
+			'Пароль не совпадает' => sub{
+				params->{password} eq params->{password2}
+			},
+			'Пароль должен быть больше 3х символов' => sub{
+				length(params->{password})>3
+			},
+		};
+
+		( $validated, $err ) = _validate_form($h_errors, 
+			qw(login password name path));
 		unless($err){
 			my $user = database->quick_select('user', 
-				{ login => params->{login}});
+				{ login => $validated->{login}});
 			unless($user){
-				$user = database->quick_insert('user', 
-					{ login => params->{login}, password => passw(params->{password}), name => params->{name} });
-				if($user){
+				my $result = database->quick_insert('user', 
+					{ login => $validated->{login}, password => passw($validated->{password}), name => $validated->{name} });
+				if($result){
 					$user = database->quick_select('user', 
-						{ login => params->{login}, password => passw(params->{password})});
-					$err = 'OK';
-					set_user_and_redirect($user, params->{path}) if($user);
+						{ login => $validated->{login}, password => passw($validated->{password})});
+					set_user_and_redirect($user, $validated->{path}) if($user);
 				} else{
 					$err = 'Не удалось зарегистрировать, попробуйте позже';
 				}
@@ -62,6 +78,7 @@ any ['get', 'post'] => '/registration' => sub {
 			params->{login} = '';
 		}
 	}
+
 	template 'registration', {
 		'err' => $err,
 		'path' => params->{path},
@@ -74,13 +91,6 @@ get '/logout' => sub {
 	app->destroy_session;
 	redirect '/login';
 };
-
-# get '/user/:id' => sub {
-# 	template 'user_item', {
-# 		'user' => database->quick_select('user', 
-# 				{ id => params->{id}});
-# 	};
-# };
 
 get '/user_list' => sub {
 	template 'user_list', {
@@ -99,18 +109,35 @@ any ['get', 'post'] => '/user_delete' => sub {
 			redirect '/login';
 		}
 	}
-	my $token = generate_token();
-	session token => $token;
+
+	my $token;
+	if(session('token')){
+		$token = session('token');
+	} else{
+		$token = generate_token();
+		session token => $token;
+	}
 
 	template 'user_delete',{
 		'token' => $token
 	};
 };
 
+get '/user/:id' => sub{
+	forward '/', {id => params->{id}, path => request->path};
+};
+
+# get '/user/:id' => sub {
+# 	template 'user_item', {
+# 		'user' => database->quick_select('user', 
+# 				{ id => params->{id}});
+# 	};
+# };
+
 sub passw{
 	my ($password) = @_;
 
-	return md5_hex('$a1t'.$password);
+	return md5_hex(config->{password_salt}.$password);
 };
 
 sub set_user_and_redirect{
@@ -123,7 +150,22 @@ sub set_user_and_redirect{
 };
 
 sub generate_token{
-	return join('', map{('a'..'z','A'..'Z',0..9)[rand 62]} 0..20);
+	# return join('', map{('a'..'z','A'..'Z',0..9)[rand 62]} 0..20);
+	return Data::UUID->new->create_str();
+}
+
+sub _validate_form{
+	my ($h_errors, @names) = @_;
+
+	for (keys %$h_errors) {
+		if($_ && reftype($h_errors->{$_}) eq 'CODE'){
+			return ( undef, $_ ) unless ($h_errors->{$_}->());
+		}
+	}
+
+	my %validate;
+	$validate{$_} = params->{$_} for (@names);
+	return ( \%validate, undef );
 }
 
 true;

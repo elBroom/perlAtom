@@ -3,7 +3,7 @@
 # all the settings in this file will be loaded at Dancer's startup.
 
 # Your application's name
-appname: "music_library"
+appname: "MusicLibrary"
 
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
@@ -21,11 +21,6 @@ charset: "UTF-8"
 # template: "simple"
 
 template: "template_toolkit"
-engines:
-  template:
-    template_toolkit:
-      start_tag: '<%'
-      end_tag:   '%>'
 
 # session engine
 #
@@ -45,11 +40,15 @@ engines:
 #      cookie_name: testapp.session
 #
 engines:
- session:
-   YAML:
-     cookie_name: app.session
-     is_secure: 1
-     is_http_only: 1
+  session:
+    YAML:
+      cookie_name: app.session
+      is_secure: 1
+      is_http_only: 1
+  template:
+    template_toolkit:
+      start_tag: '<%'
+      end_tag:   '%>'
 
 plugins:
   Database:
@@ -67,4 +66,20 @@ plugins:
       log_queries: 1
       handle_class: 'My::Super::Database::Handle'
 
-images_dir: "uploads"
+images: 
+  dir: "uploads"
+  types:
+    image/gif: gif
+    image/jpeg: jpg
+    image/pjpeg: jpg
+    image/png: png
+    image/bmp: bmp
+    image/x-bmp: bmp
+    image/x-ms-bmp: bmp
+    image/svg+xml: svg
+    image/tiff: tiff
+    image/vnd.microsoft.icon: ico
+    image/vnd.wap.wbmp: wbmp
+    image/webp: webp
+
+password_salt: "$a1t"

@@ -1,9 +1,11 @@
-<form action="/track/update/<% id %>" method="post" enctype="multipart/form-data">
+<h3>Альбом: <% album_title %></h3>
+<form method="post" enctype="multipart/form-data">
 	<% IF err %>
 		<div class="alert alert-danger">
 			<% err %>
 		</div>
 	<% END %>
+	<input type="hidden" name="_album_id" value="<% album_id %>">
 	<div class="form-group">
 		<label for="name">Название:</label>
 		<input type="text" class="form-control" id="name" value="<% name %>" name="name">
@@ -15,24 +17,16 @@
 	<div class="form-group">
 		<label for="image">Изображение:</label>
 		<% IF image %>
-			<img src="<% images_dir %><% image %>" height="50" width="50">
+			<img src="<% images_dir %><% image | url | html %>" height="50" width="50">
 		<% END %>
 		<input type="file" class="form-control" id="image" name="image">
 	</div>
 	<div class="form-group">
 		<label for="http_image">Http ссылка на изображение:</label>
 		<% IF http_image %>
-			<img src="<% http_image %>" height="50" width="50">
+			<img src="<% http_image | url | html %>" height="50" width="50">
 		<% END %>
 		<input type="text" class="form-control" id="http_image" value="<% http_image %>" name="http_image">
-	</div>
-	<div class="form-group">
-		<label for="album">Альбом:</label>
-		<select name="album_id" id="album" class="form-control">
-			<% FOREACH album IN albums %>
-				<option <% IF album.id == album_id %>selected="selected"<% END %> value="<% album.id %>"><% album.title %></option>
-			<% END %>
-		</select>
 	</div>
 	<button type="submit" class="btn btn-default">Сохранить</button>
 </form>

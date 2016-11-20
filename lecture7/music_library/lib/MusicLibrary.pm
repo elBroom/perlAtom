@@ -1,4 +1,4 @@
-package music_library;
+package MusicLibrary;
 use Dancer2;
 
 use Dancer2::Plugin::Database;
@@ -9,20 +9,22 @@ use Data::Dumper;
 
 use strict;
 use warnings;
+use utf8;
+use Encode qw(decode_utf8);
 
-use user;
+use User;
 
 our $VERSION = '0.1';
 
 prefix undef;
 
-get '/:id?' => sub {
+get '/' => sub {
 	my $user_id = params->{id} || session('user')->{id};
 	my $user = database->quick_select('user', {'id' => $user_id});
 	if($user){
 		template 'album_list', {
 			'albums' => database->selectall_arrayref(
-							'SELECT * FROM album WHERE user_id=?',
+							'SELECT * FROM album WHERE user_id=? ORDER BY `title`',
 							{ Slice => {} },
 							$user_id
 						),
@@ -30,12 +32,13 @@ get '/:id?' => sub {
 			'current_user' => session('user'),
 		};
 	} else{
-		render_404(request->path);
+		render_404(params->{path} || request->path);
 	}
 };
 
 get '/uploads/:name' => sub {
-	if (params->{name} =~ m{^[\d\w_]+\.(png|jpg|svg|gif|tiff|bmp|ico|wbmp|webp)$}){
+	my $types = join '|', values config->{images}->{types};
+	if (params->{name} =~ /^[\d\w_]+\.($types)$/s){
 		my $dir = get_dir_images();
 		my $path = path($dir, params->{name});
 
@@ -49,25 +52,29 @@ get '/uploads/:name' => sub {
 prefix '/album';
 
 any ['get', 'post'] => '/update/:id?' => sub {
-	my ($err, $album, $title, $year, $band_name);
+	my ($err, $validated, $album, $title, $year, $band_name);
 
 	if(params->{id}){
 		$album = database->quick_select('album', { id => params->{id} ,user_id => session('user')->{id} });
-		redirect '/' unless($album);
+		render_404(request->path) unless($album);
 	}
 	if(request->method() eq "POST"){
-		$err = 'Поле Название не заполнено' unless($err || params->{title});
-		$err = 'Поле Год не заполнено' unless($err || params->{year});
-		$err = 'Поле Год должен быть четырех разрядным числом' unless($err || params->{year} =~ /[\d]{4}/);
-		$err = 'Поле Группа не заполнено' unless($err || params->{band_name});
+		my $h_names = {
+			id => 'Id', 
+			title => 'Название', 
+			year => 'Год', 
+			band_name => 'Группа',
+		};
+		( $validated, $err ) = _validate_album($h_names);
+
 		unless($err){
 			my $result;
-			if(params->{id}){ #new
-				$result = database->quick_update('album', { id => params->{id} },
-				{ title => params->{title}, year => params->{year}, band_name => params->{band_name} });
-			} else{ #old
+			if($validated->{id}){ #old
+				$result = database->quick_update('album', { id => $validated->{id} },
+				{ title => $validated->{title}, year => $validated->{year}, band_name => $validated->{band_name} });
+			} else{ #new
 				$result = database->quick_insert('album', 
-				{ title => params->{title}, year => params->{year}, band_name => params->{band_name}, user_id => session('user')->{id} });
+				{ title => $validated->{title}, year => $validated->{year}, band_name => $validated->{band_name}, user_id => session('user')->{id} });
 			}
 			redirect '/' if($result);
 		}
@@ -124,6 +131,7 @@ any ['get', 'post'] => '/parse' => sub {
 						});
 					}
 					database->commit;
+					1;
 				};
 				if ($@) {
 					warn "Error add track $@";
@@ -145,13 +153,13 @@ get '/list/:id' => sub {
 	if($album){
 		template 'track_list', {
 			'tracks' => database->selectall_arrayref(
-							'SELECT * FROM track WHERE album_id=?',
+							'SELECT * FROM track WHERE album_id=? ORDER BY  `name`',
 							{ Slice => {} },
 							params->{id}
 						),
 			'album' => $album,
 			'current_user' => session('user'),
-			'images_dir' => '/'.config->{images_dir}.'/',
+			'images_dir' => '/'.config->{images}->{dir}.'/',
 		};
 	} else{
 		render_404(request->path);
@@ -159,33 +167,41 @@ get '/list/:id' => sub {
 	
 };
 
-any ['get', 'post'] => '/update/:id?' => sub {
-	my ($err, $track, $name, $format, $album_id, $image, $http_image);
+any ['get', 'post'] => '/update/:album_id/:id?' => sub {
+	my ($err, $validated, $album_title, $track, $name, $format, $album_id, $image, $http_image);
 
 	if(params->{id}){
 		$track = database->selectrow_hashref(
-								'SELECT t.* FROM track t 
-								 JOIN album a ON a.id = t.album_id
-								 WHERE t.id=? AND a.user_id=?', {},
-								params->{id}, session('user')->{id});
-		redirect '/' unless($track);
+				'SELECT t.*, a.title FROM track t 
+				 JOIN album a ON a.id = t.album_id
+				 WHERE t.album_id =? AND t.id=? AND a.user_id=?', {},
+				params->{album_id}, params->{id}, session('user')->{id});
+		render_404(request->path) unless($track);
+		$album_title = $track->{title};
+	} else{
+		my $album = database->quick_select('album', { id => params->{album_id} ,user_id => session('user')->{id} });
+		render_404(request->path) unless($album);
+		$album_title = $album->{title};
 	}
 
 	if(request->method() eq "POST"){
-		$err = 'Поле Название не заполнено' unless($err || params->{name});
-		$err = 'Поле Год не заполнено' unless($err || params->{format});
-		$err = 'Альбом не выбран' unless($err || params->{album_id});
-		$err = 'Адрес изображения не является http(s) ссылкой' unless($err || 
-			params->{http_image} =~ m{^$|^https?:\/\/.+\.(png|jpg|jpeg|svg|svgz|gif|tif|tiff|bmp|ico|wbmp|webp)$});
-		$err = 'Тип файла не соответствует изображению' if(!$err && params->{image} && !check_type(request->upload('image')->type));
-
 		$image = $track->{image} if($track);
 
+		my $h_names = {
+			id => 'Id', 
+			name => 'Название', 
+			format => 'Формат', 
+			image => 'Изображение',
+			http_image => 'Адрес изображения',
+			_album_id => 'Альбом',
+		};
+		( $validated, $err ) = _validate_track($h_names);
+
 		unless($err){
-			if(params->{image}){
+			if($validated->{image}){
 				my $dir = get_dir_images();
 				my $old_image = $image;
-				$image = params->{album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
+				$image = $validated->{_album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
 				my $path = path($dir, $image);
 				
 				request->upload('image')->link_to($path);
@@ -196,21 +212,21 @@ any ['get', 'post'] => '/update/:id?' => sub {
 			}
 
 			my $result;
-			if(params->{id}){ #new
-				$result = database->quick_update('track', { id => params->{id} },
-				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => $image });
-			} else{ #old
+			if($validated->{id}){ #old
+				$result = database->quick_update('track', { id => $validated->{id} },
+				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{_album_id}, http_image => $validated->{http_image}, image => $image });
+			} else{ #new
 				$result = database->quick_insert('track', 
-				{ name => params->{name}, format => params->{format}, album_id => params->{album_id}, http_image => params->{http_image}, image => $image });
+				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{_album_id}, http_image => $validated->{http_image}, image => $image });
 			}
-			redirect '/track/list/'.params->{album_id} if($result);
+			redirect '/track/list/'.$validated->{_album_id} if($result);
 		}
 		$name = params->{name};
 		$format = params->{format};
-		$album_id = params->{album_id};
+		$album_id = params->{_album_id};
 		$http_image = params->{http_image};
 	} else{
-		if($track && !params->{name} && !params->{format} && !params->{album_id}){
+		if($track && !params->{name} && !params->{format}){
 			$name = $track->{name};
 			$format = $track->{format};
 			$album_id = $track->{album_id};
@@ -220,18 +236,14 @@ any ['get', 'post'] => '/update/:id?' => sub {
 	}
 	template 'track_update',{
 		'id' => params->{id},
+		'album_title' => $album_title,
 		'err' => $err,
 		'name' => $name,
 		'format' => $format,
 		'album_id' => $album_id,
 		'http_image' => $http_image,
 		'image' => $image,
-		'albums' => database->selectall_arrayref(
-						'SELECT id, title FROM album WHERE user_id=?',
-						{ Slice => {} },
-						session('user')->{id}
-					),
-		'images_dir' => '/'.config->{images_dir}.'/',
+		'images_dir' => '/'.config->{images}->{dir}.'/',
 	};
 };
 
@@ -254,33 +266,16 @@ ajax '/delete/:id' => sub {
 	}
 };
 
-sub get_types{
-	return {
-		'image/gif' => 'gif',
-		'image/jpeg' => 'jpg',
-		'image/pjpeg' => 'jpg',
-		'image/png' => 'png',
-		'image/bmp' => 'bmp',
-		'image/x-bmp' => 'bmp',
-		'image/x-ms-bmp' => 'bmp',
-		'image/svg+xml' => 'svg',
-		'image/tiff' => 'tiff',
-		'image/vnd.microsoft.icon' => 'ico',
-		'image/vnd.wap.wbmp' => 'wbmp',
-		'image/webp' => 'webp',
-	};
-}
-
 sub check_type{
 	my ($type) = @_;
 
-	return defined(get_types()->{$type});
+	return defined(config->{images}->{types}->{$type});
 }
 
 sub get_image_suffix{
 	my ($type) = @_;
 
-	return get_types()->{$type};
+	return config->{images}->{types}->{$type};
 }
 
 sub generate_file_name{
@@ -288,8 +283,11 @@ sub generate_file_name{
 }
 
 sub get_dir_images{
-	my $dir = path(config->{appdir}, config->{images_dir});
-	mkdir $dir if not -e $dir;
+	my $dir = path(config->{appdir}, config->{images}->{dir});
+
+	if(not -e $dir){
+		mkdir $dir or die "Directory $dir cannot be created: ".decode_utf8($!);
+	}
 	return $dir;
 }
 
@@ -298,6 +296,55 @@ sub render_404{
 
 	status 404;
 	return "No such page: $path";
+}
+
+sub _validate_album{
+	my ($h_names) = @_;
+	my %validated;
+
+	for my $name (keys %$h_names) {
+		my $value = params->{$name};
+		if ($name eq 'title' or $name eq 'year' or $name eq 'band_name'){
+			unless($value){
+				return (undef, "Поле $h_names->{$name} не заполнено");
+			}
+		}
+		if($name eq 'year'){
+			unless($value =~ /[\d]{4}/s){
+				return (undef, "Поле $h_names->{$name} должен быть четырех разрядным числом");
+			}
+		}
+		$validated{$name} = $value;
+	}
+
+	return( \%validated, undef );
+}
+
+sub _validate_track{
+	my ($h_names) = @_;
+	my %validated;
+
+	for my $name (keys %$h_names) {
+		my $value = params->{$name};
+		if ($name eq 'name' or $name eq 'format'){
+			unless($value){
+				return (undef, "Поле $h_names->{$name} не заполнено");
+			}
+		}
+		if($name eq 'http_image'){
+			unless($value =~ m{^$|^https?:\/\/[^&?]+\.(png|jpg|jpeg|svg|svgz|gif|tif|tiff|bmp|ico|wbmp|webp)$}s){
+				return (undef, "$h_names->{$name} не является корректной http(s) ссылкой");
+			}
+		}
+		if($name eq 'image'){
+			if($value && !check_type(request->upload($name)->type)){
+				return (undef, "Тип файла не соответствует изображению");
+			}
+		}
+		$validated{$name} = $value;
+	}
+
+	return( \%validated, undef );
 }
 
 true;
