@@ -19,11 +19,11 @@
 			<tr>
 				<td><% album.title | html %></td>
 				<td><% album.band_name | html %></td>
-				<td><% album.year %></td>
+				<td><% album.year | html %></td>
 				<td>
-					<a href="/track/list/<% album.id %>"><span class="glyphicon glyphicon-list" data-toggle="tooltip" data-placement="top" title="Посмотреть"></span></a>
+					<a href="/track/list/<% album.id | url | html %>"><span class="glyphicon glyphicon-list" data-toggle="tooltip" data-placement="top" title="Посмотреть"></span></a>
 				<% IF user.id == current_user.id %>
-					<a href="/album/update/<% album.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
+					<a href="/album/update/<% album.id | url | html %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
 				<% END %>
 				</td>
 			</tr>

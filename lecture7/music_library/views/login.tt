@@ -4,10 +4,10 @@
 			<% err %>
 		</div>
 	<% END %>
-	<input type="hidden" name="path" value="<% path %>">
+	<input type="hidden" name="path" value="<% path | html %>">
 	<div class="form-group">
 		<label for="login">Логин:</label>
-		<input type="text" class="form-control" id="login" value="<% login %>" name="login">
+		<input type="text" class="form-control" id="login" value="<% login | html %>" name="login">
 	</div>
 	<div class="form-group">
 		<label for="pwd">Пароль:</label>

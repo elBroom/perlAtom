@@ -6,15 +6,15 @@
 	<% END %>
 	<div class="form-group">
 		<label for="title">Название:</label>
-		<input type="text" class="form-control" id="title" value="<% title %>" name="title">
+		<input type="text" class="form-control" id="title" value="<% album.title | html %>" name="title">
 	</div>
 	<div class="form-group">
 		<label for="year">Год:</label>
-		<input type="text" class="form-control" id="year" value="<% year %>" name="year">
+		<input type="text" class="form-control" id="year" value="<% album.year | html %>" name="year">
 	</div>
 	<div class="form-group">
 		<label for="band_name">Группа:</label>
-		<input type="text" class="form-control" id="band_name"  value="<% band_name %>" name="band_name">
+		<input type="text" class="form-control" id="band_name"  value="<% album.band_name | html %>" name="band_name">
 	</div>
 	<button type="submit" class="btn btn-default">Сохранить</button>
 </form>

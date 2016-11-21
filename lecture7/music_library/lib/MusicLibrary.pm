@@ -6,6 +6,7 @@ use Dancer2::Plugin::Ajax;
 
 use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
+use Data::UUID;
 
 use strict;
 use warnings;
@@ -37,8 +38,8 @@ get '/' => sub {
 };
 
 get '/uploads/:name' => sub {
-	my $types = join '|', values config->{images}->{types};
-	if (params->{name} =~ /^[\d\w_]+\.($types)$/s){
+	my $types = (join '|', values %{config->{images}->{types}}) || 'png';
+	if (params->{name} =~ m{^[\d\w_]+\.($types)$}s){
 		my $dir = get_dir_images();
 		my $path = path($dir, params->{name});
 
@@ -52,12 +53,13 @@ get '/uploads/:name' => sub {
 prefix '/album';
 
 any ['get', 'post'] => '/update/:id?' => sub {
-	my ($err, $validated, $album, $title, $year, $band_name);
-
+	my $album;
 	if(params->{id}){
 		$album = database->quick_select('album', { id => params->{id} ,user_id => session('user')->{id} });
 		render_404(request->path) unless($album);
 	}
+
+	my $err;
 	if(request->method() eq "POST"){
 		my $h_names = {
 			id => 'Id', 
@@ -65,7 +67,7 @@ any ['get', 'post'] => '/update/:id?' => sub {
 			year => 'Год', 
 			band_name => 'Группа',
 		};
-		( $validated, $err ) = _validate_album($h_names);
+		( my $validated, $err ) = _validate_album($h_names);
 
 		unless($err){
 			my $result;
@@ -78,22 +80,15 @@ any ['get', 'post'] => '/update/:id?' => sub {
 			}
 			redirect '/' if($result);
 		}
-		$title = params->{title};
-		$year = params->{year};
-		$band_name = params->{band_name};
-	} else{
-		if($album && !params->{title} && !params->{year} && !params->{band_name}){
-			$title = $album->{title};
-			$year = $album->{year};
-			$band_name = $album->{band_name};
-		}
+		$album->{title} = params->{title};
+		$album->{year} = params->{year};
+		$album->{band_name} = params->{band_name};
 	}
+
 	template 'album_update',{
 		'id' => params->{id},
 		'err' => $err,
-		'title' => $title,
-		'year' => $year,
-		'band_name' => $band_name,
+		'album' => $album
 	};
 };
 
@@ -108,7 +103,7 @@ any ['get', 'post'] => '/parse' => sub {
 				my $album_title = $cells[3];
 				my $track_name = $cells[4];
 				my $format = $cells[5];
-				eval {
+				my $ok = eval {
 					database->begin_work;
 					my $album = database->quick_select('album', {
 						'year' => $year, 'title' => $album_title, 'band_name' => $band_name, 'user_id' => session('user')->{id}
@@ -133,7 +128,7 @@ any ['get', 'post'] => '/parse' => sub {
 					database->commit;
 					1;
 				};
-				if ($@) {
+				unless ($ok) {
 					warn "Error add track $@";
 					database->rollback;
 				}
@@ -168,8 +163,8 @@ get '/list/:id' => sub {
 };
 
 any ['get', 'post'] => '/update/:album_id/:id?' => sub {
-	my ($err, $validated, $album_title, $track, $name, $format, $album_id, $image, $http_image);
-
+	my $track;
+	my $album_title;
 	if(params->{id}){
 		$track = database->selectrow_hashref(
 				'SELECT t.*, a.title FROM track t 
@@ -184,27 +179,26 @@ any ['get', 'post'] => '/update/:album_id/:id?' => sub {
 		$album_title = $album->{title};
 	}
 
+	my $err;
 	if(request->method() eq "POST"){
-		$image = $track->{image} if($track);
-
 		my $h_names = {
 			id => 'Id', 
 			name => 'Название', 
 			format => 'Формат', 
 			image => 'Изображение',
 			http_image => 'Адрес изображения',
-			_album_id => 'Альбом',
+			album_id => 'Альбом',
 		};
-		( $validated, $err ) = _validate_track($h_names);
+		( my $validated, $err ) = _validate_track($h_names);
 
 		unless($err){
 			if($validated->{image}){
 				my $dir = get_dir_images();
-				my $old_image = $image;
-				$image = $validated->{_album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
-				my $path = path($dir, $image);
+				my $old_image = $track->{image};
+				$track->{image} = $validated->{album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
+				my $path = path($dir, $track->{image});
 				
-				request->upload('image')->link_to($path);
+				request->upload('image')->copy_to($path);
 				if($old_image){
 					$path = path($dir, $old_image);
 					unlink($path) if -e $path;
@@ -214,35 +208,24 @@ any ['get', 'post'] => '/update/:album_id/:id?' => sub {
 			my $result;
 			if($validated->{id}){ #old
 				$result = database->quick_update('track', { id => $validated->{id} },
-				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{_album_id}, http_image => $validated->{http_image}, image => $image });
+				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{album_id}, http_image => $validated->{http_image}, image => $track->{image} });
 			} else{ #new
 				$result = database->quick_insert('track', 
-				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{_album_id}, http_image => $validated->{http_image}, image => $image });
+				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{album_id}, http_image => $validated->{http_image}, image => $track->{image} });
 			}
-			redirect '/track/list/'.$validated->{_album_id} if($result);
+			redirect '/track/list/'.$validated->{album_id} if($result);
 		}
-		$name = params->{name};
-		$format = params->{format};
-		$album_id = params->{_album_id};
-		$http_image = params->{http_image};
-	} else{
-		if($track && !params->{name} && !params->{format}){
-			$name = $track->{name};
-			$format = $track->{format};
-			$album_id = $track->{album_id};
-			$http_image = $track->{http_image};
-			$image = $track->{image};
-		}
+		$track->{name} = params->{name};
+		$track->{format} = params->{format};
+		$track->{album_id} = params->{album_id};
+		$track->{http_image} = params->{http_image};
 	}
+
 	template 'track_update',{
 		'id' => params->{id},
 		'album_title' => $album_title,
 		'err' => $err,
-		'name' => $name,
-		'format' => $format,
-		'album_id' => $album_id,
-		'http_image' => $http_image,
-		'image' => $image,
+		'track' => $track,
 		'images_dir' => '/'.config->{images}->{dir}.'/',
 	};
 };
@@ -279,7 +262,7 @@ sub get_image_suffix{
 }
 
 sub generate_file_name{
-	return md5_hex(localtime(time));
+	return md5_hex(Data::UUID->new->create_str());
 }
 
 sub get_dir_images{
@@ -310,7 +293,7 @@ sub _validate_album{
 			}
 		}
 		if($name eq 'year'){
-			unless($value =~ /[\d]{4}/s){
+			unless($value =~ m{^[\d]{4}$}s){
 				return (undef, "Поле $h_names->{$name} должен быть четырех разрядным числом");
 			}
 		}

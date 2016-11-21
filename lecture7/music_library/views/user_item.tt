@@ -1,8 +1,8 @@
 <h1>Пользователь</h1>
 <% IF user.login %>
 	<ul class="list-group">
-		<li class="list-group-item">Логин: <% user.login %></li>
-		<li class="list-group-item">Имя: <% user.name %></li>
+		<li class="list-group-item">Логин: <% user.login | html %></li>
+		<li class="list-group-item">Имя: <% user.name | html %></li>
 	</ul>
 <% ELSE %>
 	<p>Такого пользователя нет</p>

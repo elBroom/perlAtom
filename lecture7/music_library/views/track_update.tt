@@ -1,32 +1,31 @@
-<h3>Альбом: <% album_title %></h3>
+<h3>Альбом: <% album_title | html  %></h3>
 <form method="post" enctype="multipart/form-data">
 	<% IF err %>
 		<div class="alert alert-danger">
 			<% err %>
 		</div>
 	<% END %>
-	<input type="hidden" name="_album_id" value="<% album_id %>">
 	<div class="form-group">
 		<label for="name">Название:</label>
-		<input type="text" class="form-control" id="name" value="<% name %>" name="name">
+		<input type="text" class="form-control" id="name" value="<% track.name | html %>" name="name">
 	</div>
 	<div class="form-group">
 		<label for="format">Формат:</label>
-		<input type="text" class="form-control" id="format" value="<% format %>" name="format">
+		<input type="text" class="form-control" id="format" value="<% track.format | html %>" name="format">
 	</div>
 	<div class="form-group">
 		<label for="image">Изображение:</label>
-		<% IF image %>
-			<img src="<% images_dir %><% image | url | html %>" height="50" width="50">
+		<% IF track.image %>
+			<img src="<% images_dir %><% track.image | url | html %>" height="50" width="50">
 		<% END %>
 		<input type="file" class="form-control" id="image" name="image">
 	</div>
 	<div class="form-group">
 		<label for="http_image">Http ссылка на изображение:</label>
-		<% IF http_image %>
-			<img src="<% http_image | url | html %>" height="50" width="50">
+		<% IF track.http_image %>
+			<img src="<% track.http_image | url | html %>" height="50" width="50">
 		<% END %>
-		<input type="text" class="form-control" id="http_image" value="<% http_image %>" name="http_image">
+		<input type="text" class="form-control" id="http_image" value="<% track.http_image | url | html %>" name="http_image">
 	</div>
 	<button type="submit" class="btn btn-default">Сохранить</button>
 </form>

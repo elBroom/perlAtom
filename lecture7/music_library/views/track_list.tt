@@ -1,7 +1,7 @@
 <h1><% album.title | html %></h1>
 
 <% IF album.user_id == current_user.id %>
-<a href="/track/update/<% album.id %>/" class="btn btn-default" role="button">Добавить трек</a>
+<a href="/track/update/<% album.id | url | html %>/" class="btn btn-default" role="button">Добавить трек</a>
 <% END %>
 <% IF tracks.size %>
 <table class="table table-hover">
@@ -29,8 +29,8 @@
 				</td>
 				<% IF album.user_id == current_user.id %>
 				<td>
-					<a href="/track/update/<% track.album_id %>/<% track.id %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
-					<a href="/track/delete/<% track.id %>" class="delete"><span class="glyphicon glyphicon-remove" data-toggle="tooltip" data-placement="top" title="Удалить"></span></a>
+					<a href="/track/update/<% track.album_id | url | html %>/<% track.id | url | html %>"><span class="glyphicon glyphicon-pencil" data-toggle="tooltip" data-placement="top" title="Редактировать"></span></a>
+					<a href="/track/delete/<% track.id | url | html %>" class="delete"><span class="glyphicon glyphicon-remove" data-toggle="tooltip" data-placement="top" title="Удалить"></span></a>
 				</td>
 				<% END %>
 			</tr>

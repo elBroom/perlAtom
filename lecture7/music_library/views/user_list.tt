@@ -1,6 +1,6 @@
 <h1>Все пользователи</h1>
 <ul class="list-group">
 	<% FOREACH user IN users %>
-		<li class="list-group-item"><a href="/user/<% user.id %>"><% user.login | html %></a></li>
+		<li class="list-group-item"><a href="/user/<% user.id | url | html %>"><% user.login | html %></a></li>
 	<% END %>
 </ul>
