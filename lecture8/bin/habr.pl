@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Data::Dumper;
+use utf8;
+binmode(STDOUT,':utf8');
 
 use Local::Habr;
 
