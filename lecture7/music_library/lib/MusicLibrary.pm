@@ -53,40 +53,35 @@ get '/uploads/:name' => sub {
 prefix '/album';
 
 any ['get', 'post'] => '/update/:id?' => sub {
+	#Authorization
 	my $album;
 	if(params->{id}){
 		$album = database->quick_select('album', { id => params->{id} ,user_id => session('user')->{id} });
 		render_404(request->path) unless($album);
 	}
 
+	#Validation
 	my $err;
 	if(request->method() eq "POST"){
+		$album->{title} = params->{title};
+		$album->{year} = params->{year};
+		$album->{band_name} = params->{band_name};
+
 		my $h_names = {
 			id => 'Id', 
 			title => 'Название', 
 			year => 'Год', 
 			band_name => 'Группа',
 		};
-		( my $validated, $err ) = _validate_album($h_names);
+		( my $validated, $err ) = _validate_album($album, $h_names);
 
 		unless($err){
-			my $result;
-			if($validated->{id}){ #old
-				$result = database->quick_update('album', { id => $validated->{id} },
-				{ title => $validated->{title}, year => $validated->{year}, band_name => $validated->{band_name} });
-			} else{ #new
-				$result = database->quick_insert('album', 
-				{ title => $validated->{title}, year => $validated->{year}, band_name => $validated->{band_name}, user_id => session('user')->{id} });
-			}
-			redirect '/' if($result);
+			redirect '/' if(_save_album($validated));
 		}
-		$album->{title} = params->{title};
-		$album->{year} = params->{year};
-		$album->{band_name} = params->{band_name};
 	}
 
+	#Render
 	template 'album_update',{
-		'id' => params->{id},
 		'err' => $err,
 		'album' => $album
 	};
@@ -163,6 +158,7 @@ get '/list/:id' => sub {
 };
 
 any ['get', 'post'] => '/update/:album_id/:id?' => sub {
+	#Authorization
 	my $track;
 	my $album_title;
 	if(params->{id}){
@@ -179,48 +175,33 @@ any ['get', 'post'] => '/update/:album_id/:id?' => sub {
 		$album_title = $album->{title};
 	}
 
+	#Validation
 	my $err;
 	if(request->method() eq "POST"){
+		$track->{name} = params->{name};
+		$track->{format} = params->{format};
+		$track->{album_id} = params->{album_id};
+		$track->{http_image} = params->{http_image};
+		$track->{old_image} = $track->{image};
+		$track->{image} = params->{image};
+
 		my $h_names = {
 			id => 'Id', 
 			name => 'Название', 
 			format => 'Формат', 
 			image => 'Изображение',
+			old_image => 'Старое изображение',
 			http_image => 'Адрес изображения',
 			album_id => 'Альбом',
 		};
-		( my $validated, $err ) = _validate_track($h_names);
+		( my $validated, $err ) = _validate_track($track, $h_names);
 
 		unless($err){
-			if($validated->{image}){
-				my $dir = get_dir_images();
-				my $old_image = $track->{image};
-				$track->{image} = $validated->{album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
-				my $path = path($dir, $track->{image});
-				
-				request->upload('image')->copy_to($path);
-				if($old_image){
-					$path = path($dir, $old_image);
-					unlink($path) if -e $path;
-				}
-			}
-
-			my $result;
-			if($validated->{id}){ #old
-				$result = database->quick_update('track', { id => $validated->{id} },
-				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{album_id}, http_image => $validated->{http_image}, image => $track->{image} });
-			} else{ #new
-				$result = database->quick_insert('track', 
-				{ name => $validated->{name}, format => $validated->{format}, album_id => $validated->{album_id}, http_image => $validated->{http_image}, image => $track->{image} });
-			}
-			redirect '/track/list/'.$validated->{album_id} if($result);
+			redirect '/track/list/'.$validated->{album_id} if(_save_track($validated));
 		}
-		$track->{name} = params->{name};
-		$track->{format} = params->{format};
-		$track->{album_id} = params->{album_id};
-		$track->{http_image} = params->{http_image};
 	}
 
+	#Render
 	template 'track_update',{
 		'id' => params->{id},
 		'album_title' => $album_title,
@@ -282,11 +263,11 @@ sub render_404{
 }
 
 sub _validate_album{
-	my ($h_names) = @_;
+	my ($data, $h_names) = @_;
 	my %validated;
 
 	for my $name (keys %$h_names) {
-		my $value = params->{$name};
+		my $value = $data->{$name};
 		if ($name eq 'title' or $name eq 'year' or $name eq 'band_name'){
 			unless($value){
 				return (undef, "Поле $h_names->{$name} не заполнено");
@@ -303,12 +284,26 @@ sub _validate_album{
 	return( \%validated, undef );
 }
 
+sub _save_album{
+	my ($data) = @_;
+	my $result;
+
+	if($data->{id}){ #old
+		$result = database->quick_update('album', { id => $data->{id} },
+		{ title => $data->{title}, year => $data->{year}, band_name => $data->{band_name} });
+	} else{ #new
+		$result = database->quick_insert('album', 
+		{ title => $data->{title}, year => $data->{year}, band_name => $data->{band_name}, user_id => session('user')->{id} });
+	}
+	return $result;
+}
+
 sub _validate_track{
-	my ($h_names) = @_;
+	my ($data, $h_names) = @_;
 	my %validated;
 
 	for my $name (keys %$h_names) {
-		my $value = params->{$name};
+		my $value = $data->{$name};
 		if ($name eq 'name' or $name eq 'format'){
 			unless($value){
 				return (undef, "Поле $h_names->{$name} не заполнено");
@@ -328,6 +323,33 @@ sub _validate_track{
 	}
 
 	return( \%validated, undef );
+}
+
+sub _save_track{
+	my ($data) = @_;
+
+	if($data->{image}){
+		my $dir = get_dir_images();
+		$data->{image} = $data->{album_id}.'_'.generate_file_name().'.'.get_image_suffix(request->upload('image')->type);
+		my $path = path($dir, $data->{image});
+		
+		request->upload('image')->copy_to($path);
+		if($data->{old_image}){
+			$path = path($dir, $data->{old_image});
+			unlink($path) if -e $path;
+		}
+	}
+
+	my $result;
+	if($data->{id}){ #old
+		$result = database->quick_update('track', { id => $data->{id} },
+		{ name => $data->{name}, format => $data->{format}, album_id => $data->{album_id}, http_image => $data->{http_image}, image => $data->{image} });
+	} else{ #new
+		$result = database->quick_insert('track', 
+		{ name => $data->{name}, format => $data->{format}, album_id => $data->{album_id}, http_image => $data->{http_image}, image => $data->{image} });
+	}
+
+	return $result;
 }
 
 true;
