@@ -6,9 +6,9 @@ use warnings;
 use Getopt::Long;
 use Data::Dumper;
 use utf8;
-binmode(STDOUT,':utf8');
+# binmode(STDOUT,':utf8');
 
-use Local::Habr;
+use Local::HabrFacade;
 
 my $command = $ARGV[0];
 my $format;
@@ -27,7 +27,7 @@ GetOptions(
 	'site=s' => \$site,
 );
 
-my $habr = Local::Habr->new(
+my $habr = Local::HabrFacade->new(
 	'command' => $command,
 	'params' => \%params,
 	'refresh' => $refresh,
