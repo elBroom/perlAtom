@@ -7,6 +7,7 @@ no warnings 'experimental';
 
 use Data::Dumper;
 
+use Local::Habr::Config;
 use Local::Habr::Commenter;
 use Local::Habr::Post;
 use Local::Habr::User;
@@ -50,10 +51,9 @@ sub new{
 	$self->_params($params{'params'});
 
 	my $site = $params{'site'} || 'habrahabr';
-	
-	$self->_commenter(Local::Habr::Commenter->new(refresh=>$params{'refresh'}, site=>$site));
-	$self->_user(Local::Habr::User->new(refresh=>$params{'refresh'}, site=>$site));
-	$self->_post(Local::Habr::Post->new(refresh=>$params{'refresh'}, site=>$site));
+	my $config = Local::Habr::Config->new;
+	$config->site($site);
+	$config->is_refresh($params{'refresh'});
 	return $self;
 }
 
@@ -68,37 +68,37 @@ sub _get_data{
 	given($self->_command){
 		when('user'){
 			if($self->_params->{'name'}){
-				return $self->_user->get_user($self->_params->{'name'});
+				return Local::Habr::User->new->get_user($self->_params->{'name'});
 			} elsif($self->_params->{'post'}){
-				my $post = $self->_post->get_post($self->_params->{'post'});
-				return $self->_user->get_user($post->{'author'});
+				my $post = Local::Habr::Post->new->get_post($self->_params->{'post'});
+				return Local::Habr::User->new->get_user($post->{'author'});
 			} else{
 				die 'Not valid arguments';
 			}
 		}
 		when('post'){
 			if($self->_params->{'id'}){
-				return $self->_post->get_posts($self->_params->{'id'});
+				return Local::Habr::Post->new->get_posts($self->_params->{'id'});
 			} else{
 				die 'Not valid arguments';
 			}
 		}
 		when('commenters'){
 			if($self->_params->{'post'}){
-				return $self->_commenter->get_commenters($self->_params->{'post'});
+				return Local::Habr::Commenter->new->get_commenters($self->_params->{'post'});
 			} else{
 				die 'Not valid arguments';
 			}
 		}
 		when('desert_posts'){
 			if($self->_params->{'n'}){
-				return $self->_commenter->get_desert_posts($self->_params->{'n'});
+				return Local::Habr::Commenter->new->get_desert_posts($self->_params->{'n'});
 			} else{
 				die 'Not valid arguments';
 			}
 		}
 		when('self_commentors'){
-			return $self->_commenter->get_self_commentors;
+			return Local::Habr::Commenter->new->get_self_commentors;
 		}
 		default{
 			die 'Not valid arguments';

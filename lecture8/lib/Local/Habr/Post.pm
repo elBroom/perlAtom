@@ -50,7 +50,7 @@ sub get_post{
 	my ($self, $id) = @_;
 	my $result;
 
-	$result = $self->_mysql_get_post($id) unless($self->_refresh);
+	$result = $self->_mysql_get_post($id) unless($self->_config->is_refresh);
 	unless($result){
 		$result = $self->_loader_get_post($id);
 		die "Post not found $id" unless($result);
@@ -63,7 +63,7 @@ sub _loader_get_post{
 	my ($self, $id) = @_;
 	my %result;
 	
-	my $tree = Local::Source::Loader->new->connection->get_tree($self->_site, 'post', $id);
+	my $tree = Local::Source::Loader->new->connection->get_tree($self->_config->site, 'post', $id);
 	return undef unless($tree);
 
 	$result{'id'} = $id;
@@ -82,7 +82,7 @@ sub _loader_get_post{
 		push(@names, $_);
 	}
 	@names = uniq @names;
-	$result{'commenters'} = Local::Habr::Commenter->new(site=>$self->_site, refresh=>$self->_refresh)->update_commenters(\%result, \@names);
+	$result{'commenters'} = Local::Habr::Commenter->new->update_commenters(\%result, \@names);
 
 	return \%result;
 }

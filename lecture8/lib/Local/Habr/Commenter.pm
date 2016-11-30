@@ -39,7 +39,7 @@ sub get_commenters{
 	my $result;
 	my $commenters;
 
-	$commenters = $self->_mysql_get_commenters($post_id) unless($self->_refresh);
+	$commenters = $self->_mysql_get_commenters($post_id) unless($self->_config->is_refresh);
 	if($commenters && @{$commenters}){
 		$result = $commenters;
 	} else{
@@ -52,7 +52,7 @@ sub get_self_commentors{
 	my ($self) = @_;
 	my $result;
 
-	$result = $self->_memcached_get_self_commentors() unless($self->_refresh);
+	$result = $self->_memcached_get_self_commentors() unless($self->_config->is_refresh);
 	unless($result){
 		$result = $self->_mysql_get_self_commentors;
 		$self->_memcached_set_self_commentors($result);
@@ -64,7 +64,7 @@ sub get_desert_posts{
 	my ($self, $n) = @_;
 	my $result;
 
-	$result = $self->_memcached_get_desert_posts($n) unless($self->_refresh);
+	$result = $self->_memcached_get_desert_posts($n) unless($self->_config->is_refresh);
 	unless($result){
 		$result = $self->_mysql_get_desert_posts($n);
 		$self->_memcached_set_desert_posts({$n => $result});
@@ -77,7 +77,7 @@ sub update_commenters{
 
 	my @commenters;
 	for my $name (@{$names}) {
-		my $user = Local::Habr::User->new(site=>$self->_site, refresh=>$self->_refresh)->get_user($name);
+		my $user = Local::Habr::User->new->get_user($name);
 		if($user){
 			push(@commenters, $user);
 			$self->_mysql_set_commenter($post, $user);
@@ -92,8 +92,7 @@ sub update_commenters{
 sub _loader_get_commenters{
 	my ($self, $post_id) = @_;
 
-	my $post = Local::Habr::Post->new(site=>$self->_site, refresh=>1)
-				->get_post($post_id);
+	my $post = Local::Habr::Post->new->get_post($post_id);
 	return $post->{'commenters'} if($post->{'commenters'});
 	return \[];
 }
@@ -148,7 +147,7 @@ sub _mysql_get_desert_posts{
 
 sub _memcached_get_self_commentors{
 	my ($self) = @_;
-	my $data = Local::Source::Memcached->new->connection->get($self->_site.'_self_commentors');
+	my $data = Local::Source::Memcached->new->connection->get($self->_config->site.'_self_commentors');
 
 	return JSON::XS->new->utf8->decode($data) if($data);
 	return undef;
@@ -158,7 +157,7 @@ sub _memcached_set_self_commentors{
 	my ($self, $data) = @_;
 
 	return Local::Source::Memcached->new->connection->set(
-		$self->_site.'_self_commentors',
+		$self->_config->site.'_self_commentors',
 		JSON::XS->new->utf8->encode($data),
 		60
 	) if ($data);
@@ -166,12 +165,12 @@ sub _memcached_set_self_commentors{
 
 sub _memcached_del_self_commentors{
 	my ($self) = @_;
-	return Local::Source::Memcached->new->connection->delete($self->_site.'_self_commentors');
+	return Local::Source::Memcached->new->connection->delete($self->_config->site.'_self_commentors');
 }
 
 sub _memcached_get_desert_posts{
 	my ($self, $n) = @_;
-	my $data = Local::Source::Memcached->new->connection->get($self->_site.'_desert_posts');
+	my $data = Local::Source::Memcached->new->connection->get($self->_config->site.'_desert_posts');
 
 	if($data){
 		$data = JSON::XS->new->utf8->decode($data);
@@ -183,14 +182,14 @@ sub _memcached_get_desert_posts{
 sub _memcached_set_desert_posts{
 	my ($self, $data) = @_;
 
-	my $old_data = Local::Source::Memcached->new->connection->get($self->_site.'_desert_posts');
+	my $old_data = Local::Source::Memcached->new->connection->get($self->_config->site.'_desert_posts');
 	if($old_data){
 		$old_data = JSON::XS->new->utf8->decode($old_data);
 		$old_data->{$_} = $data->{$_} for (keys %{$data});
 		$data = $old_data;
 	}
 	return Local::Source::Memcached->new->connection->set(
-		$self->_site.'_desert_posts',
+		$self->_config->site.'_desert_posts',
 		JSON::XS->new->utf8->encode($data),
 		60
 	) if ($data);
@@ -198,7 +197,7 @@ sub _memcached_set_desert_posts{
 
 sub _memcached_del_desert_posts{
 	my ($self) = @_;
-	return Local::Source::Memcached->new->connection->delete($self->_site.'_desert_posts');
+	return Local::Source::Memcached->new->connection->delete($self->_config->site.'_desert_posts');
 }
 
 1;

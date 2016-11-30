@@ -1,15 +1,15 @@
-package Local::Habr;
+package Local::Habr::Config;
 
+use v5.10;
 use strict;
 use warnings;
-
-use Local::Habr::Config;
+no warnings 'experimental';
 
 =encoding utf8
 
 =head1 NAME
 
-Local::Habr - abstract format
+Local::Config - Config
 
 =head1 VERSION
 
@@ -25,17 +25,15 @@ our $VERSION = '1.00';
 
 use Class::XSAccessor {
 	accessors => [qw/
-		_config
+		is_refresh site
 	/],
 };
 
+my $connect;
+
 sub new{
 	my ($class) = @_;
-
-	my $self = bless {}, $class;
-	$self->_config(Local::Habr::Config->new);
-
-	return $self;
+	$connect ||= bless {}, $class;
 }
 
 1;
