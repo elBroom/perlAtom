@@ -51,9 +51,7 @@ sub new{
 	$self->_params($params{'params'});
 
 	my $site = $params{'site'} || 'habrahabr';
-	my $config = Local::Habr::Config->new;
-	$config->site($site);
-	$config->is_refresh($params{'refresh'});
+	my $config = Local::Habr::Config->instance({site => $site, is_refresh => $params{'refresh'}});
 	return $self;
 }
 

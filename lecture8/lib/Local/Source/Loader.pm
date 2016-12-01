@@ -8,6 +8,7 @@ use v5.10;
 use strict;
 use warnings;
 use mro 'c3';
+use base qw/Class::Singleton/;
 
 use Data::Dumper;
 use HTML::TreeBuilder::XPath;
@@ -35,15 +36,11 @@ our $VERSION = '1.00';
 
 =cut
 
-my $connect;
-
-sub new{
+sub _new_instance{
 	my ($class) = @_;
-	$connect ||= bless {}, $class;
-}
+	my $self  = bless { }, $class;
 
-sub _connection_ini{
-	my ($self) = @_;
+	$self->{ connection } = $self;
 	return $self;
 }
 

@@ -8,6 +8,7 @@ use v5.10;
 use strict;
 use warnings;
 use mro 'c3';
+use base qw/Class::Singleton/;
 
 use Data::Dumper;
 use Cache::Memcached::Fast;
@@ -34,19 +35,16 @@ our $VERSION = '1.00';
 
 =cut
 
-my $connect;
-
-sub new{
+sub _new_instance{
 	my ($class) = @_;
-	$connect ||= bless {}, $class;
-}
+	my $self  = bless { }, $class;
+	my $conf = $self->_get_config();
 
-sub _connection_ini{
-	my ($self, $conf) = @_;
-
-	return (Cache::Memcached::Fast->new({servers => [
+	$self->{ connection } = Cache::Memcached::Fast->new({servers => [
 		$conf->val('MEMACHED','mem_host').':'.$conf->val('MEMACHED','mem_port')
-	]}) or die "Can't connection to memcached");
+	]}) || die "Can't connection to memcached";
+
+	return $self;
 }
 
 1;

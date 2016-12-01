@@ -8,6 +8,7 @@ use v5.10;
 use strict;
 use warnings;
 use mro 'c3';
+use base qw/Class::Singleton/;
 
 use Data::Dumper;
 use DBI;
@@ -34,20 +35,17 @@ our $VERSION = '1.00';
 
 =cut
 
-my $connect;
-
-sub new{
+sub _new_instance{
 	my ($class) = @_;
-	$connect ||= bless {}, $class;
-}
+	my $self  = bless { }, $class;
+	my $conf = $self->_get_config();
 
-sub _connection_ini{
-	my ($self, $conf) = @_;
-
-	return (DBI->connect(
+	$self->{ connection } = DBI->connect(
 		'dbi:mysql:database='.$conf->val('DB','db_name'), $conf->val('DB','db_user'), $conf->val('DB','db_pass'),
 		{ RaiseError=>1, mysql_enable_utf8 => 1 }
-	) or die "Can't connection to database");
+	) || die "Can't connection to database";
+
+	return $self;
 }
 
 1;

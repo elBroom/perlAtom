@@ -3,7 +3,7 @@ package Local::Habr::Config;
 use v5.10;
 use strict;
 use warnings;
-no warnings 'experimental';
+use base qw/Class::Singleton/;
 
 =encoding utf8
 
@@ -23,17 +23,7 @@ our $VERSION = '1.00';
 
 =cut
 
-use Class::XSAccessor {
-	accessors => [qw/
-		is_refresh site
-	/],
-};
-
-my $connect;
-
-sub new{
-	my ($class) = @_;
-	$connect ||= bless {}, $class;
-}
+sub site { $_[0]->instance->{site} }
+sub is_refresh { $_[0]->instance->{is_refresh} }
 
 1;

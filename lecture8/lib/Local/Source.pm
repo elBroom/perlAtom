@@ -28,22 +28,15 @@ our $VERSION = '1.00';
 
 =cut
 
-sub connection{
+sub connection { $_[0]->instance->{connection} }
+
+sub _get_config{
 	my ($self) = @_;
 
-	unless($self->{_connection}){
-		my $conf_file = file($0)->absolute->dir.'/config.ini';
-		my $conf = Config::IniFiles->new(-file=>$conf_file);
-		die "Can't read config ".$conf_file unless($conf);
-
-		$self->{_connection} = $self->_connection_ini($conf);
-	}
-
-	$self->{_connection};
-}
-
-sub _connection_ini{
-	undef;
+	my $conf_file = file($0)->absolute->dir.'/config.ini';
+	my $conf = Config::IniFiles->new(-file=>$conf_file);
+	die "Can't read config ".$conf_file unless($conf);
+	return $conf;
 }
 
 1;

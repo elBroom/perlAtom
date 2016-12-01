@@ -23,19 +23,10 @@ our $VERSION = '1.00';
 
 =cut
 
-use Class::XSAccessor {
-	accessors => [qw/
-		_config
-	/],
-};
-
 sub new{
 	my ($class) = @_;
 
-	my $self = bless {}, $class;
-	$self->_config(Local::Habr::Config->new);
-
-	return $self;
+	return bless {}, $class;
 }
 
 1;

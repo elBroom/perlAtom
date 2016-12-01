@@ -12,8 +12,8 @@ use JSON::XS;
 
 use Local::Source::Loader;
 use Local::Source::MySQL;
-use Local::Source::Memcached;
 
+use Local::Habr::Config;
 use Local::Habr::Commenter;
 
 =encoding utf8
@@ -50,7 +50,7 @@ sub get_post{
 	my ($self, $id) = @_;
 	my $result;
 
-	$result = $self->_mysql_get_post($id) unless($self->_config->is_refresh);
+	$result = $self->_mysql_get_post($id) unless(Local::Habr::Config->is_refresh);
 	unless($result){
 		$result = $self->_loader_get_post($id);
 		die "Post not found $id" unless($result);
@@ -63,7 +63,7 @@ sub _loader_get_post{
 	my ($self, $id) = @_;
 	my %result;
 	
-	my $tree = Local::Source::Loader->new->connection->get_tree($self->_config->site, 'post', $id);
+	my $tree = Local::Source::Loader->connection->get_tree(Local::Habr::Config->site, 'post', $id);
 	return undef unless($tree);
 
 	$result{'id'} = $id;
@@ -90,7 +90,7 @@ sub _loader_get_post{
 sub _mysql_get_post{
 	my ($self, $id) = @_;
 
-	return Local::Source::MySQL->new->connection->selectrow_hashref(
+	return Local::Source::MySQL->connection->selectrow_hashref(
 		'SELECT author, theme, rating, count_view, count_star FROM post WHERE id_post = ?',
 		{}, $id
 	) if ($id);
@@ -101,7 +101,7 @@ sub _mysql_get_post{
 sub _mysql_set_post{
 	my ($self, $data) = @_;
 
-	return Local::Source::MySQL->new->connection->prepare(
+	return Local::Source::MySQL->connection->prepare(
 		'INSERT INTO post (id_post, author, theme, rating, count_view, count_star, last_update) VALUES (?,?,?,?,?,?,NOW())
 		ON DUPLICATE KEY UPDATE author=?, theme=?, rating=?, count_view=?, count_star=?, last_update=NOW()'
 	)->execute(
