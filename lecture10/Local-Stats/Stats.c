@@ -11,17 +11,13 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include <Stats.h>
 
 #include "ppport.h"
 
 #include "const-c.inc"
 
-typedef struct{
-	SV* coderef;
-	HV * params;
-} Stats;
-
-#line 25 "Stats.c"
+#line 21 "Stats.c"
 #ifndef PERL_UNUSED_VAR
 #  define PERL_UNUSED_VAR(var) if (0) var = var
 #endif
@@ -165,7 +161,7 @@ S_croak_xs_usage(const CV *const cv, const char *const params)
 #  define newXS_deffile(a,b) Perl_newXS_deffile(aTHX_ a,b)
 #endif
 
-#line 169 "Stats.c"
+#line 165 "Stats.c"
 
 /* INCLUDE:  Including 'const-xs.inc' from 'Stats.xs' */
 
@@ -190,7 +186,7 @@ XS_EUPXS(XS_Local__Stats_constant)
 	/* IV		iv;	Uncomment this if you need to return IVs */
 	/* NV		nv;	Uncomment this if you need to return NVs */
 	/* const char	*pv;	Uncomment this if you need to return PVs */
-#line 194 "Stats.c"
+#line 190 "Stats.c"
 	SV *	sv = ST(0)
 ;
 	const char *	s = SvPV(sv, len);
@@ -267,7 +263,7 @@ XS_EUPXS(XS_Local__Stats_constant)
                type, s));
           PUSHs(sv);
         }
-#line 271 "Stats.c"
+#line 267 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -290,16 +286,16 @@ XS_EUPXS(XS_Local__Stats_new)
 ;
 	SV *	coderef = ST(1)
 ;
-#line 21 "Stats.xs"
+#line 17 "Stats.xs"
 		Stats * self = (Stats *) malloc(sizeof(Stats));
 		self->coderef = newSVsv(coderef);
-		self->params = newHV();
+		self->metrics = newHV();
 		XPUSHs(sv_2mortal(sv_bless(
 			newRV_noinc(newSViv(PTR2IV(self))),
 			gv_stashpv(SvPV_nolen(class), TRUE)
 		)));
 		XSRETURN(1);
-#line 303 "Stats.c"
+#line 299 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -321,10 +317,25 @@ XS_EUPXS(XS_Local__Stats_add)
 ;
 	SV *	value = ST(2)
 ;
-#line 32 "Stats.xs"
+#line 28 "Stats.xs"
+		Metric * metric;
 		SV * obj_sv = SvROK(obj) ? SvRV(obj) : obj;
 		Stats * self = INT2PTR(Stats *, SvIV(obj_sv));
-#line 328 "Stats.c"
+		if(!hv_exists(self->metrics, name, strlen(name))){
+			metric = (Metric *) malloc(sizeof(Metric));
+			metric->flags = 18;
+			clear_metric;
+		} else{
+			SV * hashval = HeVAL(hv_fetch_ent(self->metrics,newSVpv(name,strlen(name)),0,0));
+			SV * hashval_sv = SvROK(hashval) ? SvRV(hashval) : hashval;
+			metric = INT2PTR(Metric *, SvIV(hashval_sv));
+		}
+
+
+
+		hv_store(self->metrics, name, strlen(name), 
+				newRV_noinc(newSViv(PTR2IV(metric))), 0);
+#line 339 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -342,12 +353,46 @@ XS_EUPXS(XS_Local__Stats_stat)
     {
 	SV *	obj = ST(0)
 ;
-#line 38 "Stats.xs"
+#line 50 "Stats.xs"
+		HE * entry;
+		I32 retlen;
 		SV * obj_sv = SvROK(obj) ? SvRV(obj) : obj;
 		Stats * self = INT2PTR(Stats *, SvIV(obj_sv));
-		XPUSHs(sv_2mortal(newRV_noinc((SV *)self->params)));
+
+		HV * result = newHV();
+		hv_iterinit(self->metrics);
+		while (entry = hv_iternext(self->metrics)){
+			char * key = hv_iterkey(entry,&retlen);
+			SV * hashval = hv_iterval(self->metrics,entry);
+			SV * hashval_sv = SvROK(hashval) ? SvRV(hashval) : hashval;
+			Metric * metric = INT2PTR(Metric *, SvIV(hashval_sv));
+
+			HV * h_metric = newHV();
+			if (metric->flags & F_AVG){
+				hv_store(h_metric, "avg", 3, metric->avg, 0);
+			}
+			if (metric->flags & F_CNT){
+				hv_store(h_metric, "cnt", 3, metric->cnt, 0);
+			}
+			if (metric->flags & F_MIN){
+				hv_store(h_metric, "min", 3, metric->min, 0);
+			}
+			if (metric->flags & F_MAX){
+				hv_store(h_metric, "max", 3, metric->max, 0);
+			}
+			if (metric->flags & F_SUM){
+				hv_store(h_metric, "sum", 3, metric->sum, 0);
+			}
+			hv_store(result, key, strlen(key), newRV_noinc((SV *)h_metric), 0);
+
+			clear_metric;
+			hv_store(self->metrics, key, strlen(key), 
+				newRV_noinc(newSViv(PTR2IV(metric))), 0);
+		}
+
+		XPUSHs(sv_2mortal(newRV_noinc((SV *)result)));
 		XSRETURN(1);
-#line 351 "Stats.c"
+#line 396 "Stats.c"
 	PUTBACK;
 	return;
     }

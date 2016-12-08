@@ -10,7 +10,9 @@ my $stat = Local::Stats->new(sub {
 
 print Dumper($stat);
 
-$stat->add("m1", 1);
+print Dumper($stat->add("m1", 1));
+print Dumper($stat->add("m1", 2));
+print Dumper($stat->add("m2", 3));
 # for(1..1000){
 # 	$stat->add("m1", $_);
 # 	$stat->add("m2", $_);
