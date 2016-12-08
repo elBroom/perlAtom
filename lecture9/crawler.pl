@@ -16,13 +16,26 @@ my $sum = 0;
 $AnyEvent::HTTP::MAX_PER_HOST = 100;
 my $cv = AnyEvent->condvar;
 
+sub is_limit{
+	keys %urls > $count_limit
+}
+
 sub get_length_page{
 	my ($url) = @_;
 
-	if(!(defined $urls{$url}) && keys %urls < $count_limit){
+	if(!(defined $urls{$url}) && !is_limit){
 		$urls{$url} = 0;
 		$cv->begin;
-		http_get $site.$url, sub {
+		http_get $site.$url,
+		on_header => sub {
+			my ($header) = @_;
+			return 0 unless($header->{"content-type"} =~ m{^text/html\s*(?:;|$)});
+			return 1 unless($header->{"Redirect"});
+			return 0 unless($header->{"URL"} =~ m{^$site});
+			$url = $_[0]{"URL"} =~ s/$site//r;
+			return !defined $urls{$url};
+		},
+		sub {
 			my ($body, $header) = @_;
 			if($header->{'Status'} == 200){
 				$urls{$url} = $header->{'content-length'};
@@ -34,6 +47,7 @@ sub get_length_page{
 					if($_ && $_->attr('href') =~
 						m{^(?:$es_site)?(\/[\w\/\-_\(\)]*)(?:\?[^"]+)?$}ig){
 						# say Dumper($1);
+						last if(is_limit);
 						get_length_page($1);
 					}
 				}
