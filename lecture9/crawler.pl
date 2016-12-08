@@ -33,7 +33,7 @@ sub get_length_page{
 			return 0 unless($header->{"content-type"} =~ m{^text/html\s*(?:;|$)});
 			if($header->{"Status"} =~ m{^30\d$}){
 				if($header->{"location"} =~ m{^$site}){
-					# $url = $header->{"location"} =~ s/$site//r;
+					$url = $header->{"location"} =~ s/$site//r;
 					get_length_page($url);
 				}
 				return 0;
