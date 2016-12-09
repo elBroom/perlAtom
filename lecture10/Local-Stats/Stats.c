@@ -287,7 +287,9 @@ XS_EUPXS(XS_Local__Stats_new)
 	SV *	coderef = ST(1)
 ;
 #line 17 "Stats.xs"
-		Stats * self = (Stats *) malloc(sizeof(Stats));
+		// Stats * self = (Stats *) malloc(sizeof(Stats));
+		Stats * self;
+		Newx(self, 1, Stats);
 		self->coderef = newSVsv(coderef);
 		self->metrics = newHV();
 		XPUSHs(sv_2mortal(sv_bless(
@@ -295,7 +297,7 @@ XS_EUPXS(XS_Local__Stats_new)
 			gv_stashpv(SvPV_nolen(class), TRUE)
 		)));
 		XSRETURN(1);
-#line 299 "Stats.c"
+#line 301 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -317,17 +319,17 @@ XS_EUPXS(XS_Local__Stats_add)
 ;
 	SV *	value = ST(2)
 ;
-#line 28 "Stats.xs"
+#line 30 "Stats.xs"
 		Metric * metric;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
-		if(!SvNIOK(value)){
-			Perl_croak_nocontext("value not number");
-		}
+		if(!SvNIOK(value)) Perl_croak_nocontext("value not number");
 
 		if(!hv_exists(self->metrics, name, strlen(name))){
-			metric = (Metric *) malloc(sizeof(Metric));
+			// metric = (Metric *) malloc(sizeof(Metric));
+			Newx(metric, 1, Metric);
 			metric->flags = 0;
 			int count, i;
+
 			ENTER;
 			SAVETMPS;
 				PUSHMARK(SP);
@@ -383,7 +385,7 @@ XS_EUPXS(XS_Local__Stats_add)
 		hv_store(self->metrics, name, strlen(name), 
 				newRV_noinc(newSViv(PTR2IV(metric))), 0);
 		XSRETURN(0);
-#line 387 "Stats.c"
+#line 389 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -401,7 +403,7 @@ XS_EUPXS(XS_Local__Stats_stat)
     {
 	SV *	obj = ST(0)
 ;
-#line 97 "Stats.xs"
+#line 99 "Stats.xs"
 		HE * entry;
 		I32 retlen;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
@@ -428,7 +430,7 @@ XS_EUPXS(XS_Local__Stats_stat)
 
 		XPUSHs(sv_2mortal(newRV_noinc((SV *)result)));
 		XSRETURN(1);
-#line 432 "Stats.c"
+#line 434 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -446,7 +448,7 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
     {
 	SV *	obj = ST(0)
 ;
-#line 127 "Stats.xs"
+#line 129 "Stats.xs"
 		HE * entry;
 		I32 retlen;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
@@ -456,11 +458,13 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
-			free(metric);
+			// free(metric);
+			Safefree(metric);
 		}
-		free(self);
+		// free(self);
+		Safefree(self);
 		XSRETURN(0);
-#line 464 "Stats.c"
+#line 468 "Stats.c"
 	PUTBACK;
 	return;
     }

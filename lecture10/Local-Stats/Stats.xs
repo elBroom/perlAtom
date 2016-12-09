@@ -14,7 +14,8 @@ INCLUDE: const-xs.inc
 
 void new(SV * class, SV * coderef)
 	PPCODE:
-		Stats * self = (Stats *) malloc(sizeof(Stats));
+		Stats * self;
+		Newx(self, 1, Stats);
 		self->coderef = newSVsv(coderef);
 		self->metrics = newHV();
 		XPUSHs(sv_2mortal(sv_bless(
@@ -30,7 +31,7 @@ void add(SV * obj, char * name, SV * value)
 		if(!SvNIOK(value)) Perl_croak_nocontext("value not number");
 
 		if(!hv_exists(self->metrics, name, strlen(name))){
-			metric = (Metric *) malloc(sizeof(Metric));
+			Newx(metric, 1, Metric);
 			metric->flags = 0;
 			int count, i;
 
@@ -132,8 +133,8 @@ void DESTROY(SV * obj)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
-			free(metric);
+			Safefree(metric);
 		}
-		free(self);
+		Safefree(self);
 		XSRETURN(0);
 
