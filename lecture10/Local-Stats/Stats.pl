@@ -1,6 +1,8 @@
 use Local::Stats;
 use Data::Dumper;
+use Devel::Leak;
 
+Devel::Leak::NoteSV($handle);
 my $stat = Local::Stats->new(sub {
 	my $name = shift;
 	return "cnt", "sum" if($name eq "m1");
@@ -9,11 +11,22 @@ my $stat = Local::Stats->new(sub {
 	return "avg" if($name eq "m4");
 });
 
-print Dumper($stat->add("m2", 2));
+
+$stat->add("m3", 2);
 for(1..5){
+	$stat->add("m1", $_);
+	$stat->add("m2", $_);
+	$stat->add("m3", $_);
+}
+print Dumper($stat->stat());
+
+for(10..15){
 	$stat->add("m1", $_);
 	$stat->add("m2", $_);
 	$stat->add("m3", $_);
 }
 
 print Dumper($stat->stat());
+
+$stat = undef;
+Devel::Leak::CheckSV($handle);

@@ -287,7 +287,6 @@ XS_EUPXS(XS_Local__Stats_new)
 	SV *	coderef = ST(1)
 ;
 #line 17 "Stats.xs"
-		// Stats * self = (Stats *) malloc(sizeof(Stats));
 		Stats * self;
 		Newx(self, 1, Stats);
 		self->coderef = newSVsv(coderef);
@@ -297,7 +296,7 @@ XS_EUPXS(XS_Local__Stats_new)
 			gv_stashpv(SvPV_nolen(class), TRUE)
 		)));
 		XSRETURN(1);
-#line 301 "Stats.c"
+#line 300 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -325,7 +324,6 @@ XS_EUPXS(XS_Local__Stats_add)
 		if(!SvNIOK(value)) Perl_croak_nocontext("value not number");
 
 		if(!hv_exists(self->metrics, name, strlen(name))){
-			// metric = (Metric *) malloc(sizeof(Metric));
 			Newx(metric, 1, Metric);
 			metric->flags = 0;
 			int count, i;
@@ -356,7 +354,7 @@ XS_EUPXS(XS_Local__Stats_add)
 			LEAVE;
 			clear_metric;
 		} else{
-			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics,newSVpv(name,strlen(name)),0,0)));
+			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics, sv_2mortal(newSVpv(name,strlen(name))),0,0)));
 			metric = INT2PTR(Metric *, SvIV(hashval));
 		}
 
@@ -384,8 +382,8 @@ XS_EUPXS(XS_Local__Stats_add)
 
 		hv_store(self->metrics, name, strlen(name), 
 				newRV_noinc(newSViv(PTR2IV(metric))), 0);
-		XSRETURN(0);
-#line 389 "Stats.c"
+		XSRETURN(1);
+#line 387 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -403,7 +401,7 @@ XS_EUPXS(XS_Local__Stats_stat)
     {
 	SV *	obj = ST(0)
 ;
-#line 99 "Stats.xs"
+#line 98 "Stats.xs"
 		HE * entry;
 		I32 retlen;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
@@ -430,7 +428,7 @@ XS_EUPXS(XS_Local__Stats_stat)
 
 		XPUSHs(sv_2mortal(newRV_noinc((SV *)result)));
 		XSRETURN(1);
-#line 434 "Stats.c"
+#line 432 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -448,7 +446,7 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
     {
 	SV *	obj = ST(0)
 ;
-#line 129 "Stats.xs"
+#line 128 "Stats.xs"
 		HE * entry;
 		I32 retlen;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
@@ -458,13 +456,18 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
-			// free(metric);
+			SvREFCNT_dec(metric->avg);
+			SvREFCNT_dec(metric->cnt);
+			SvREFCNT_dec(metric->max);
+			SvREFCNT_dec(metric->min);
+			SvREFCNT_dec(metric->sum);
 			Safefree(metric);
 		}
-		// free(self);
+		SvREFCNT_dec(self->metrics);
+		SvREFCNT_dec(self->coderef);
 		Safefree(self);
 		XSRETURN(0);
-#line 468 "Stats.c"
+#line 471 "Stats.c"
 	PUTBACK;
 	return;
     }

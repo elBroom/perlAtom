@@ -24,6 +24,7 @@ void new(SV * class, SV * coderef)
 		)));
 		XSRETURN(1);
 
+
 void add(SV * obj, char * name, SV * value)
 	PPCODE:
 		Metric * metric;
@@ -61,7 +62,7 @@ void add(SV * obj, char * name, SV * value)
 			LEAVE;
 			clear_metric;
 		} else{
-			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics,newSVpv(name,strlen(name)),0,0)));
+			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics, sv_2mortal(newSVpv(name,strlen(name))),0,0)));
 			metric = INT2PTR(Metric *, SvIV(hashval));
 		}
 
@@ -89,7 +90,7 @@ void add(SV * obj, char * name, SV * value)
 
 		hv_store(self->metrics, name, strlen(name), 
 				newRV_noinc(newSViv(PTR2IV(metric))), 0);
-		XSRETURN(0);
+		XSRETURN(1);
 
 
 void stat(SV * obj)
@@ -133,8 +134,15 @@ void DESTROY(SV * obj)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
+			SvREFCNT_dec(metric->avg);
+			SvREFCNT_dec(metric->cnt);
+			SvREFCNT_dec(metric->max);
+			SvREFCNT_dec(metric->min);
+			SvREFCNT_dec(metric->sum);
 			Safefree(metric);
 		}
+		SvREFCNT_dec(self->metrics);
+		SvREFCNT_dec(self->coderef);
 		Safefree(self);
 		XSRETURN(0);
 
