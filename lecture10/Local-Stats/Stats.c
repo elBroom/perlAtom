@@ -352,7 +352,7 @@ XS_EUPXS(XS_Local__Stats_add)
 				PUTBACK;
 			FREETMPS;
 			LEAVE;
-			clear_metric;
+			undef_metric;
 		} else{
 			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics, sv_2mortal(newSVpv(name,strlen(name))),0,0)));
 			metric = INT2PTR(Metric *, SvIV(hashval));
@@ -414,21 +414,22 @@ XS_EUPXS(XS_Local__Stats_stat)
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
 
 			HV * h_metric = newHV();
-			if (metric->flags & F_AVG) hv_store(h_metric, "avg", 3, metric->avg, 0);
-			if (metric->flags & F_CNT) hv_store(h_metric, "cnt", 3, metric->cnt, 0);
-			if (metric->flags & F_MIN) hv_store(h_metric, "min", 3, metric->min, 0);
-			if (metric->flags & F_MAX) hv_store(h_metric, "max", 3, metric->max, 0);
-			if (metric->flags & F_SUM) hv_store(h_metric, "sum", 3, metric->sum, 0);
+			if (metric->flags & F_AVG) hv_store(h_metric, "avg", 3, newSVsv(metric->avg), 0);
+			if (metric->flags & F_CNT) hv_store(h_metric, "cnt", 3, newSVsv(metric->cnt), 0);
+			if (metric->flags & F_MIN) hv_store(h_metric, "min", 3, newSVsv(metric->min), 0);
+			if (metric->flags & F_MAX) hv_store(h_metric, "max", 3, newSVsv(metric->max), 0);
+			if (metric->flags & F_SUM) hv_store(h_metric, "sum", 3, newSVsv(metric->sum), 0);
 			hv_store(result, key, strlen(key), newRV_noinc((SV *)h_metric), 0);
 
 			clear_metric;
+			undef_metric;
 			hv_store(self->metrics, key, strlen(key), 
 				newRV_noinc(newSViv(PTR2IV(metric))), 0);
 		}
 
 		XPUSHs(sv_2mortal(newRV_noinc((SV *)result)));
 		XSRETURN(1);
-#line 432 "Stats.c"
+#line 433 "Stats.c"
 	PUTBACK;
 	return;
     }
@@ -446,7 +447,7 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
     {
 	SV *	obj = ST(0)
 ;
-#line 128 "Stats.xs"
+#line 129 "Stats.xs"
 		HE * entry;
 		I32 retlen;
 		Stats * self = INT2PTR(Stats *, SvIV(SvRV(obj)));
@@ -456,18 +457,14 @@ XS_EUPXS(XS_Local__Stats_DESTROY)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
-			SvREFCNT_dec(metric->avg);
-			SvREFCNT_dec(metric->cnt);
-			SvREFCNT_dec(metric->max);
-			SvREFCNT_dec(metric->min);
-			SvREFCNT_dec(metric->sum);
+			clear_metric;
 			Safefree(metric);
 		}
 		SvREFCNT_dec(self->metrics);
 		SvREFCNT_dec(self->coderef);
 		Safefree(self);
 		XSRETURN(0);
-#line 471 "Stats.c"
+#line 468 "Stats.c"
 	PUTBACK;
 	return;
     }

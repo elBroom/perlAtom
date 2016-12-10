@@ -12,7 +12,8 @@ my $stat = Local::Stats->new(sub {
 });
 
 
-$stat->add("m3", 2);
+print Dumper($stat->add("m4", 2));
+print Dumper($stat->add("m4", 1));
 for(1..5){
 	$stat->add("m1", $_);
 	$stat->add("m2", $_);
@@ -20,6 +21,7 @@ for(1..5){
 }
 print Dumper($stat->stat());
 
+print Dumper($stat->add("m4", 1));
 for(10..15){
 	$stat->add("m1", $_);
 	$stat->add("m2", $_);

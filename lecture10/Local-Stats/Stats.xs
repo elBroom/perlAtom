@@ -60,7 +60,7 @@ void add(SV * obj, char * name, SV * value)
 				PUTBACK;
 			FREETMPS;
 			LEAVE;
-			clear_metric;
+			undef_metric;
 		} else{
 			SV * hashval = SvRV(HeVAL(hv_fetch_ent(self->metrics, sv_2mortal(newSVpv(name,strlen(name))),0,0)));
 			metric = INT2PTR(Metric *, SvIV(hashval));
@@ -107,14 +107,15 @@ void stat(SV * obj)
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
 
 			HV * h_metric = newHV();
-			if (metric->flags & F_AVG) hv_store(h_metric, "avg", 3, metric->avg, 0);
-			if (metric->flags & F_CNT) hv_store(h_metric, "cnt", 3, metric->cnt, 0);
-			if (metric->flags & F_MIN) hv_store(h_metric, "min", 3, metric->min, 0);
-			if (metric->flags & F_MAX) hv_store(h_metric, "max", 3, metric->max, 0);
-			if (metric->flags & F_SUM) hv_store(h_metric, "sum", 3, metric->sum, 0);
+			if (metric->flags & F_AVG) hv_store(h_metric, "avg", 3, newSVsv(metric->avg), 0);
+			if (metric->flags & F_CNT) hv_store(h_metric, "cnt", 3, newSVsv(metric->cnt), 0);
+			if (metric->flags & F_MIN) hv_store(h_metric, "min", 3, newSVsv(metric->min), 0);
+			if (metric->flags & F_MAX) hv_store(h_metric, "max", 3, newSVsv(metric->max), 0);
+			if (metric->flags & F_SUM) hv_store(h_metric, "sum", 3, newSVsv(metric->sum), 0);
 			hv_store(result, key, strlen(key), newRV_noinc((SV *)h_metric), 0);
 
 			clear_metric;
+			undef_metric;
 			hv_store(self->metrics, key, strlen(key), 
 				newRV_noinc(newSViv(PTR2IV(metric))), 0);
 		}
@@ -134,11 +135,7 @@ void DESTROY(SV * obj)
 			char * key = hv_iterkey(entry,&retlen);
 			SV * hashval = SvRV(hv_iterval(self->metrics,entry));
 			Metric * metric = INT2PTR(Metric *, SvIV(hashval));
-			SvREFCNT_dec(metric->avg);
-			SvREFCNT_dec(metric->cnt);
-			SvREFCNT_dec(metric->max);
-			SvREFCNT_dec(metric->min);
-			SvREFCNT_dec(metric->sum);
+			clear_metric;
 			Safefree(metric);
 		}
 		SvREFCNT_dec(self->metrics);
